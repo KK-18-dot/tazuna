@@ -14,3 +14,5 @@ build/
 secrets/
 # eval results are local artifacts unless deliberately committed as baselines
 evals/results/
+# the owner's local work ledger (dev-platform backlog.sh / board read it from disk)
+BACKLOG.md
