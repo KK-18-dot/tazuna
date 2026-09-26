@@ -15,7 +15,7 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .config import Config, ensure_state_dir, load_config, state_dir
+from .config import Config, ensure_state_dir, load_config, pre_rename_leftovers, state_dir
 from .errors import TazunaError
 from .gitstate import safe_git
 from .handoff import ledger_path
@@ -109,6 +109,9 @@ def run_doctor(project_dir: Path | None = None) -> Report:
         report.warn(f"configuration: {exc}")
         return report
     report.ok("configuration loaded from: " + " < ".join(cfg.sources))
+    for old in pre_rename_leftovers(cfg.project_dir):
+        new = old.with_name(old.name.replace("agentplane", "tazuna"))
+        report.warn(f"{old} is from before the rename to tazuna and is not read; rename it to {new}")
     if not cfg.project_file.is_file():
         report.note(f"no {cfg.project_file.name} in {cfg.project_dir} (run `tazuna init` to create one)")
 
@@ -211,7 +214,7 @@ def _check_state(report: Report) -> None:
     except OSError as exc:
         report.warn(f"state directory not writable: {sd} ({exc})")
         return
-    # Directories created by tazuna 0.1.0 (or by hand) follow the umask; logs hold full
+    # Directories created by agentplane 0.1.0 (or by hand) follow the umask; logs hold full
     # provider output, so an open state directory is a finding, with the one-line fix.
     fix = f"chmod -R go-rwx {shlex.quote(str(sd))}"
     info = sd.stat()

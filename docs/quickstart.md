@@ -37,6 +37,8 @@ tazuna render
 
 `PROJECT.md` becomes `CLAUDE.md`, `AGENTS.md`, and `.cursor/rules/project.mdc` (change the list under `[render] targets`; `gemini`, `copilot`, `windsurf`, `cline` are built in). Every generated file starts with a marker comment; tazuna refuses to overwrite files that lack it, and `tazuna guard` lets a harness hook refuse edits to them.
 
+For Claude Code, `tazuna guard --print-hook` prints a `PreToolUse` hook for `.claude/settings.json`. With it, an edit to a generated file asks for confirmation instead of going through; anything else passes. The hook fails open, so `render --check` in CI stays the real gate.
+
 Per-harness extras go in `.tazuna/appendix/<target>.md` and are appended to that target only.
 
 Commit both the source and the generated files. In CI:

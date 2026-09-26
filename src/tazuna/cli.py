@@ -480,7 +480,8 @@ def build_parser() -> argparse.ArgumentParser:
     # Not argparse.REMAINDER: it rejects arguments that start with "-", so the documented
     # `guard --hook claude` exited 2, which Claude Code reads as "block this tool call".
     p.add_argument("paths", nargs="*", help="exit 2 when any of these is a generated file")
-    p.add_argument("--hook", choices=["claude"], help="answer a harness hook event read from stdin")
+    # No `choices`: argparse would exit 2 on a typo, and a hook must fail open (guard.main warns).
+    p.add_argument("--hook", metavar="claude", help="answer a harness hook event read from stdin")
     p.add_argument("--print-hook", action="store_true", help="print the Claude Code settings snippet")
     p.set_defaults(func=cmd_guard)
     return parser

@@ -69,6 +69,14 @@ def user_config_dir() -> Path:
     return Path(base) / "tazuna"
 
 
+def pre_rename_leftovers(project_dir: Path) -> list[Path]:
+    """Paths still under the pre-0.3 name. They are never read (there is no compatibility layer);
+    this only turns a silent miss into a hint to rename them."""
+    base = os.environ.get("XDG_CONFIG_HOME") or str(Path.home() / ".config")
+    candidates = [project_dir / "agentplane.toml", project_dir / ".agentplane", Path(base) / "agentplane"]
+    return [p for p in candidates if p.exists()]
+
+
 def state_dir() -> Path:
     base = os.environ.get("TAZUNA_STATE_DIR")
     if base:
@@ -224,6 +232,11 @@ def load_config(
     if project_file.is_file() and not ignore_project:
         project_data = _read_toml(project_file)
     elif require_project:
+        if (project_dir / "agentplane.toml").is_file():
+            raise ConfigError(
+                f"no {PROJECT_CONFIG_NAME} in {project_dir}, but agentplane.toml is there: "
+                "agentplane was renamed to tazuna; rename the file (see CHANGELOG.md)"
+            )
         raise ConfigError(f"no {PROJECT_CONFIG_NAME} in {project_dir} (run `tazuna init` first)")
 
     # Packs listed by the user layer and the project layer are both honoured; project last.

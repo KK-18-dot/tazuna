@@ -4,7 +4,7 @@
 
 **Define project policy once. Render it into every agent harness. Route work across providers. Get auditable results.**
 
-*Tazuna* (手綱) is Japanese for the reins: one pair of hands steering several horses. Versions up to 0.2.0 were published as `agentplane`; see the [changelog](CHANGELOG.md) for the rename.
+*Tazuna* (手綱) is Japanese for the reins: one pair of hands steering several horses. Versions up to 0.2.0 were published as `agentplane`; see the [changelog](https://github.com/KK-18-dot/tazuna/blob/main/CHANGELOG.md) for the rename.
 
 tazuna is a small, provider-neutral control plane for teams that use more than one AI coding agent (Claude Code, Codex, Cursor, Gemini CLI, local models, or anything with a headless CLI). It does four things and nothing else:
 
@@ -57,7 +57,7 @@ The model ids written by `tazuna init` are examples. Replace them with the ids y
 ```bash
 cd your-project
 tazuna init                  # writes tazuna.toml + PROJECT.md, roles for the CLIs it finds
-$EDITOR PROJECT.md               # describe the project once: purpose, stack, commands, quality gate, do-nots
+$EDITOR PROJECT.md           # describe the project once: purpose, stack, commands, quality gate, do-nots
 tazuna render                # -> CLAUDE.md, AGENTS.md, .cursor/rules/project.mdc
 tazuna routes                # what each role resolves to, and whether its provider is installed
 tazuna doctor                # OK / WARN / NOTE; exit 1 only on real problems
@@ -69,7 +69,7 @@ Delegate a task and read the result:
 tazuna run --role dry "Summarize the repo layout in five bullets"      # offline mock, always works
 tazuna run --role review --read-only "Review src/ for missing error handling"
 tazuna run --role impl --task-file PLAN.md --timeout 1200
-cat HANDOFF.md                   # status, changed files, verification facts, provider output tail
+cat HANDOFF.md               # status, changed files, verification facts, provider output tail
 tazuna runs                  # ledger of every run
 ```
 

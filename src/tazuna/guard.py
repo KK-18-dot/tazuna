@@ -68,6 +68,9 @@ def main(paths: list[str], hook: str | None = None, print_hook: bool = False) ->
         if out:
             print(out)
         return 0
+    if hook is not None:
+        print(f"tazuna guard: unknown hook {hook!r} (supported: claude); allowing", file=sys.stderr)
+        return 0
     if print_hook:
         print(CLAUDE_SETTINGS_SNIPPET)
         return 0

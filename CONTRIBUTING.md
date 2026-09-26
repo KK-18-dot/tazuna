@@ -28,7 +28,7 @@ Built-in providers live in `src/tazuna/providers/*.toml`. When a CLI changes its
 
 1. Bump `version` in `pyproject.toml` and `__version__` in `src/tazuna/__init__.py`; add a `CHANGELOG.md` entry.
 2. `git tag -a vX.Y.Z -m "vX.Y.Z" && git push --tags`, then create a GitHub release from the tag.
-3. `.github/workflows/release.yml` builds the sdist and wheel, smoke-tests the wheel in a clean environment, and publishes both to PyPI through trusted publishing with provenance attestations. The trusted publisher and the `pypi` environment are already configured; the repository variable `PYPI_TRUSTED_PUBLISHER` (`true`) gates the publish job.
+3. `.github/workflows/release.yml` builds the sdist and wheel, smoke-tests the wheel in a clean environment, and publishes both to PyPI through trusted publishing with provenance attestations. The `pypi` environment is configured. The trusted publisher was set up for the old name `agentplane` and must be added again for `tazuna` before the first release under the new name (see the comment at the top of `release.yml`). The repository variable `PYPI_TRUSTED_PUBLISHER` (`true`) gates the publish job.
 4. Check the result: `pipx install --force tazuna==X.Y.Z && tazuna --version` (or the same with `python -m pip` in a fresh virtual environment).
 
 ## Commits and pull requests

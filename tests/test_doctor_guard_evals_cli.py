@@ -177,6 +177,32 @@ def test_guard_cli_print_hook_and_paths(project: Path, capsys) -> None:
     assert main(["guard", str(project / "PROJECT.md")]) == 0
 
 
+def test_guard_cli_unknown_hook_fails_open(project: Path, monkeypatch, capsys) -> None:
+    render(load_config(project))
+    event = {"tool_name": "Edit", "tool_input": {"file_path": str(project / "CLAUDE.md")}}
+    monkeypatch.setattr("sys.stdin", io.StringIO(json.dumps(event)))
+    assert main(["guard", "--hook", "Claude"]) == 0
+    captured = capsys.readouterr()
+    assert captured.out == "" and "unknown hook" in captured.err
+
+
+# ---- rename leftovers ---------------------------------------------------------------------------
+
+
+def test_pre_rename_config_gets_a_rename_hint_not_init(sandbox: Path) -> None:
+    proj = sandbox / "old"
+    proj.mkdir()
+    (proj / "agentplane.toml").write_text("", encoding="utf-8")
+    with pytest.raises(TazunaError, match="renamed to tazuna"):
+        load_config(proj, require_project=True)
+
+
+def test_doctor_warns_on_pre_rename_leftovers(project: Path) -> None:
+    (project / ".agentplane" / "appendix").mkdir(parents=True)
+    report = run_doctor(project)
+    assert any(f.level == "WARN" and ".agentplane" in f.message for f in report.findings), report.render()
+
+
 # ---- evals --------------------------------------------------------------------------------------
 
 

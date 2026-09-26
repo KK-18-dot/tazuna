@@ -3,8 +3,9 @@ name: release
 # Builds the sdist and wheel for every published GitHub release and uploads them to PyPI
 # through trusted publishing (no API token stored in the repository).
 #
-# One-time setup by the repository owner (done for 0.1.0), after which the `publish` job runs automatically:
-#   1. On PyPI: project "tazuna" → Publishing → add GitHub publisher
+# One-time setup by the repository owner, after which the `publish` job runs automatically:
+#   1. On PyPI: add a pending GitHub publisher for project "tazuna" (a new name, not a rename of
+#      "agentplane", so the publisher set up for agentplane does not carry over)
 #      (owner KK-18-dot, repository tazuna, workflow release.yml, environment pypi).
 #   2. On GitHub: Settings → Environments → create "pypi".
 #   3. On GitHub: Settings → Variables → Actions → PYPI_TRUSTED_PUBLISHER = true.
