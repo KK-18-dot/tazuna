@@ -382,7 +382,7 @@ def cmd_eval(args: argparse.Namespace) -> int:
 def cmd_guard(args: argparse.Namespace) -> int:
     from .guard import main as guard_main
 
-    return guard_main(args.guard_args)
+    return guard_main(args.paths, hook=args.hook, print_hook=args.print_hook)
 
 
 # ---- parser -------------------------------------------------------------------------------------
@@ -477,7 +477,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.set_defaults(func=cmd_eval)
 
     p = sub.add_parser("guard", help="refuse edits to generated files (for harness hooks)")
-    p.add_argument("guard_args", nargs=argparse.REMAINDER)
+    # Not argparse.REMAINDER: it rejects arguments that start with "-", so the documented
+    # `guard --hook claude` exited 2, which Claude Code reads as "block this tool call".
+    p.add_argument("paths", nargs="*", help="exit 2 when any of these is a generated file")
+    p.add_argument("--hook", choices=["claude"], help="answer a harness hook event read from stdin")
+    p.add_argument("--print-hook", action="store_true", help="print the Claude Code settings snippet")
     p.set_defaults(func=cmd_guard)
     return parser
 

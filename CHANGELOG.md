@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- `agentplane guard --hook claude` and `agentplane guard --print-hook` failed with "unrecognized arguments" and exit 2, so the hook setting that the README and quickstart recommend made Claude Code block every Edit / Write / MultiEdit call. `--hook` and `--print-hook` are now real options, and the paths form is unchanged. Tests now call `guard` through the CLI.
+
 ## 0.2.0 — 2026-09-17
 
 ### Upgrade notes

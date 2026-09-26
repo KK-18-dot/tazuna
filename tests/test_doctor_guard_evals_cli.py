@@ -1,3 +1,4 @@
+import io
 import json
 import os
 import signal
@@ -157,6 +158,23 @@ def test_claude_hook_asks_for_generated_and_is_silent_otherwise(project: Path) -
     )
     assert claude_hook(json.dumps({"tool_name": "Bash", "tool_input": {"command": "ls"}})) is None
     assert claude_hook("not json") is None
+
+
+def test_guard_cli_hook_answers_through_the_documented_command(project: Path, monkeypatch, capsys) -> None:
+    render(load_config(project))
+    event = {"tool_name": "Edit", "tool_input": {"file_path": str(project / "CLAUDE.md")}}
+    monkeypatch.setattr("sys.stdin", io.StringIO(json.dumps(event)))
+    assert main(["guard", "--hook", "claude"]) == 0
+    assert json.loads(capsys.readouterr().out)["hookSpecificOutput"]["permissionDecision"] == "ask"
+
+
+def test_guard_cli_print_hook_and_paths(project: Path, capsys) -> None:
+    render(load_config(project))
+    assert main(["guard", "--print-hook"]) == 0
+    snippet = json.loads(capsys.readouterr().out)
+    assert snippet["hooks"]["PreToolUse"][0]["hooks"][0]["command"] == "agentplane guard --hook claude"
+    assert main(["guard", str(project / "CLAUDE.md"), str(project / "PROJECT.md")]) == 2
+    assert main(["guard", str(project / "PROJECT.md")]) == 0
 
 
 # ---- evals --------------------------------------------------------------------------------------

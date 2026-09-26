@@ -62,16 +62,16 @@ CLAUDE_SETTINGS_SNIPPET = """{
 }"""
 
 
-def main(args: list[str]) -> int:
-    if args[:2] == ["--hook", "claude"]:
+def main(paths: list[str], hook: str | None = None, print_hook: bool = False) -> int:
+    if hook == "claude":
         out = claude_hook(sys.stdin.read())
         if out:
             print(out)
         return 0
-    if args[:1] == ["--print-hook"]:
+    if print_hook:
         print(CLAUDE_SETTINGS_SNIPPET)
         return 0
-    hits = check_paths(args)
+    hits = check_paths(paths)
     for hit in hits:
         print(
             f"agentplane guard: {hit} is generated from PROJECT.md; edit PROJECT.md and run `agentplane render`",
