@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tazuna"
-version = "0.2.0"
+version = "0.3.0"
 description = "Define project policy once, render it into every agent harness, route work across providers, and get auditable results."
 readme = "README.md"
 license = "MIT"

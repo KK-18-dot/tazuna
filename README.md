@@ -108,7 +108,7 @@ Full docs: [docs/quickstart.md](docs/quickstart.md) · [docs/configuration.md](d
 
 ## Status
 
-0.2.0, alpha. The Claude Code, Codex, and Cursor provider definitions mirror flags used in production; Gemini CLI is marked experimental. Provider CLIs change their flags; if one breaks, override the provider table in your user config and open an issue.
+0.3.0, alpha. The Claude Code, Codex, and Cursor provider definitions mirror flags used in production; Gemini CLI is marked experimental. Provider CLIs change their flags; if one breaks, override the provider table in your user config and open an issue.
 
 ## License
 
