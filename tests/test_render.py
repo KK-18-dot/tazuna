@@ -111,6 +111,98 @@ def test_max_bytes_must_be_a_positive_integer(project: Path) -> None:
         load_config(project)
 
 
+def _use_targets(project: Path, targets: str) -> None:
+    toml = project / "tazuna.toml"
+    text = toml.read_text(encoding="utf-8").replace('targets = ["claude", "codex", "cursor"]', f"targets = {targets}")
+    toml.write_text(text, encoding="utf-8")
+
+
+def test_claude_shim_imports_agents_md_instead_of_copying_it(project: Path) -> None:
+    _use_targets(project, '["claude-shim", "codex"]')
+    appendix = project / ".tazuna" / "appendix"
+    appendix.mkdir(parents=True)
+    (appendix / "claude.md").write_text("Claude-only note.\n", encoding="utf-8")
+    cfg = load_config(project)
+    assert [r.action for r in render(cfg)] == ["written", "written"]
+    claude = (project / "CLAUDE.md").read_text(encoding="utf-8")
+    assert claude.startswith(HEADER)
+    assert "\n@AGENTS.md\n" in claude
+    assert "Use fake-fast-1" not in claude and "Claude-only note." in claude
+    agents = (project / "AGENTS.md").read_text(encoding="utf-8")
+    assert "Use fake-fast-1" in agents and "Claude-only note." not in agents
+    assert all(r.action == "unchanged" for r in render(cfg, check=True))
+
+
+@pytest.mark.parametrize(
+    "targets, message",
+    [
+        ('["claude-shim"]', "imports AGENTS.md from target 'codex', which is not in \\[render\\] targets"),
+        ('["claude", "claude-shim", "codex"]', "'claude' and 'claude-shim' both write CLAUDE.md"),
+    ],
+)
+def test_claude_shim_needs_its_import_and_a_path_of_its_own(project: Path, targets: str, message: str) -> None:
+    _use_targets(project, targets)
+    with pytest.raises(ConfigError, match=message):
+        load_config(project)
+
+
+def test_new_projects_default_to_agents_md_and_the_claude_shim(sandbox: Path) -> None:
+    proj = sandbox / "fresh"
+    proj.mkdir()
+    assert main(["init", "--dir", str(proj)]) == 0
+    assert load_config(proj).render_targets == ["claude-shim", "codex"]
+    # A config without [render] targets keeps the pre-0.4 list, so an old project is not switched.
+    (proj / "tazuna.toml").write_text("", encoding="utf-8")
+    assert load_config(proj).render_targets == ["claude", "codex", "cursor"]
+
+
+@pytest.mark.parametrize(
+    "extra, message",
+    [
+        ('[targets.mine]\npath = "./claude.md"\n', "both write"),
+        ('[targets.claude-shim]\nimport_of = "claude-shim"\n', "or the target itself"),
+        ('[targets.codex]\nimport_of = "claude-shim"\n', "is itself an import"),
+        ('[targets.claude-shim]\npath = "docs/CLAUDE.md"\n', "at the project root"),
+    ],
+)
+def test_import_and_path_checks_cover_the_edge_cases(project: Path, extra: str, message: str) -> None:
+    _use_targets(project, '["claude-shim", "codex", "mine"]' if "mine" in extra else '["claude-shim", "codex"]')
+    toml = project / "tazuna.toml"
+    toml.write_text(toml.read_text(encoding="utf-8") + "\n" + extra, encoding="utf-8")
+    with pytest.raises(ConfigError, match=message):
+        load_config(project)
+
+
+def test_render_target_outside_the_enabled_list_is_refused(project: Path) -> None:
+    _use_targets(project, '["claude-shim", "codex"]')
+    cfg = load_config(project)
+    with pytest.raises(UsageError, match="not in \\[render\\] targets"):
+        render(cfg, targets=["claude"])
+
+
+def test_adopt_refuses_an_import_only_claude_md_and_keeps_other_hand_written_targets(project: Path, capsys) -> None:
+    _use_targets(project, '["claude-shim", "codex"]')
+    (project / "PROJECT.md").unlink()
+    (project / "CLAUDE.md").write_text("@AGENTS.md\n", encoding="utf-8")
+    (project / "AGENTS.md").write_text("# real hand-written policy\n", encoding="utf-8")
+    with pytest.raises(UsageError, match="only imports"):
+        adopt(load_config(project))
+    assert not (project / "PROJECT.md").exists()
+
+    (project / "CLAUDE.md").write_text("# claude policy\n", encoding="utf-8")
+    assert main(["render", "--adopt", "--dir", str(project)]) == 0
+    assert (project / "AGENTS.md.pre-tazuna.bak").read_text(encoding="utf-8") == "# real hand-written policy\n"
+    assert "kept as AGENTS.md.pre-tazuna.bak" in capsys.readouterr().out
+
+
+def test_doctor_warns_about_a_generated_file_of_a_disabled_target(project: Path) -> None:
+    render(load_config(project))
+    _use_targets(project, '["claude-shim", "codex"]')
+    render(load_config(project))
+    text = run_doctor(project).render()
+    assert "WARN .cursor/rules/project.mdc was generated for target cursor" in text, text
+
+
 def test_missing_policy_is_usage_error(project: Path) -> None:
     cfg = load_config(project)
     (project / "PROJECT.md").unlink()

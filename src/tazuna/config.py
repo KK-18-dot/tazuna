@@ -26,6 +26,10 @@ from .errors import ConfigError
 
 PROJECT_CONFIG_NAME = "tazuna.toml"
 PACK_CONFIG_NAME = "pack.toml"
+# Used only when a tazuna.toml has no [render] targets. New projects get ["claude-shim", "codex"]
+# from the init template; this fallback keeps the pre-0.4 list so such a project does not switch
+# CLAUDE.md to an import (and orphan .cursor/rules/project.mdc) on its next render.
+DEFAULT_RENDER_TARGETS = ["claude", "codex", "cursor"]
 
 # No leading "-": a model id is passed as the value after --model and must not read as a flag.
 MODEL_ID_RE = re.compile(r"^[A-Za-z0-9._:/][A-Za-z0-9._:/-]*(\[1m\])?$")
@@ -67,6 +71,11 @@ DEFAULT_RUN = {
 def user_config_dir() -> Path:
     base = os.environ.get("XDG_CONFIG_HOME") or str(Path.home() / ".config")
     return Path(base) / "tazuna"
+
+
+def target_path_key(path: str) -> str:
+    """Compare target paths the way the filesystem might: "./CLAUDE.md" and "claude.md" can be one file."""
+    return os.path.normpath(path).lower()
 
 
 def pre_rename_leftovers(project_dir: Path) -> list[Path]:
@@ -186,7 +195,7 @@ class Config:
 
     @property
     def render_targets(self) -> list[str]:
-        return list(self.data.get("render", {}).get("targets", ["claude", "codex", "cursor"]))
+        return list(self.data.get("render", {}).get("targets", DEFAULT_RENDER_TARGETS))
 
     @property
     def run(self) -> dict[str, Any]:
@@ -333,9 +342,34 @@ def validate(cfg: Config) -> None:
         limit = target.get("max_bytes") if isinstance(target, dict) else None
         if limit is not None and (isinstance(limit, bool) or not isinstance(limit, int) or limit < 1):
             raise ConfigError(f"[targets.{name}] max_bytes must be a positive integer")
-    for name in cfg.render_targets:
+    enabled = cfg.render_targets
+    writers: dict[str, str] = {}
+    for name in enabled:
         if name not in cfg.targets:
             raise ConfigError(f"[render] targets: unknown target {name!r} (known: {', '.join(sorted(cfg.targets))})")
+        target = cfg.targets[name]
+        path = str(target.get("path", ""))
+        key = target_path_key(path)
+        if key in writers:
+            raise ConfigError(f"[render] targets: {writers[key]!r} and {name!r} both write {path}; enable one of them")
+        writers[key] = name
+        source = target.get("import_of")
+        if source is not None:
+            if not isinstance(source, str) or source not in cfg.targets or source == name:
+                raise ConfigError(f"[targets.{name}] import_of: unknown target {source!r} (or the target itself)")
+            if cfg.targets[source].get("import_of") is not None:
+                raise ConfigError(
+                    f"[targets.{name}] import_of: {source!r} is itself an import; point at the file with the policy"
+                )
+            # `@path` resolves relative to the importing file; keeping importers at the root keeps
+            # the project-relative path correct.
+            if os.path.dirname(os.path.normpath(path)):
+                raise ConfigError(f"[targets.{name}] import_of needs the target's path at the project root, not {path}")
+            if source not in enabled:
+                raise ConfigError(
+                    f"[render] targets: {name!r} imports {cfg.targets[source].get('path')} from target {source!r}, "
+                    f"which is not in [render] targets; add {source!r} or the import points at nothing"
+                )
     run = cfg.run
     for key in ("timeout", "min_output_bytes", "max_depth"):
         val = run.get(key, DEFAULT_RUN[key])

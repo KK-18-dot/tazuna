@@ -1,6 +1,6 @@
 # {{name}} — PROJECT.md
 
-<!-- Single source of project policy. CLAUDE.md, AGENTS.md, .cursor/rules/project.mdc (and any
+<!-- Single source of project policy. AGENTS.md, CLAUDE.md (and any
      other enabled target) are GENERATED from this file by `tazuna render`.
      Edit here, then re-render. Generated files carry a marker and must not be edited. -->
 
@@ -33,7 +33,7 @@
 ## Do not
 
 - Read, write, or log `.env`, `.env.*`, `secrets/**`, or credential files.
-- Edit generated files (`CLAUDE.md`, `AGENTS.md`, `.cursor/rules/project.mdc`); edit `PROJECT.md` and run `tazuna render`.
+- Edit generated files (`CLAUDE.md`, `AGENTS.md`, and any other enabled target); edit `PROJECT.md` and run `tazuna render`.
 - <project-specific prohibitions>
 
 ## Known pitfalls (optional — delete the section if empty)

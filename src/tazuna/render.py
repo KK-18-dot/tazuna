@@ -19,6 +19,7 @@ from .errors import ConfigError, UsageError
 MARKER = "<!-- GENERATED-FROM: PROJECT.md"
 HEADER = "<!-- GENERATED-FROM: PROJECT.md by tazuna — do not edit. Edit PROJECT.md and run `tazuna render`. -->"
 MODEL_TOKEN_RE = re.compile(r"\{\{model:([A-Za-z0-9_-]+)\}\}")
+IMPORT_ONLY_RE = re.compile(r"^(\s*(@\S+|<!--.*?-->)\s*)+$", re.S)
 
 
 @dataclass
@@ -71,9 +72,14 @@ def render_text(cfg: Config, target: str, policy_text: str) -> str:
     if spec.get("frontmatter"):
         parts.append(spec["frontmatter"])
     parts.append(HEADER + "\n\n")
-    parts.append(policy_text)
-    if not policy_text.endswith("\n"):
-        parts.append("\n")
+    source = spec.get("import_of")
+    if source:
+        imported = cfg.targets[source]["path"]
+        parts.append(f"The project policy is in {imported}; this file only imports it.\n\n@{imported}\n")
+    else:
+        parts.append(policy_text)
+        if not policy_text.endswith("\n"):
+            parts.append("\n")
     appendix = spec.get("appendix")
     if appendix:
         appendix_path = Path(appendix)
@@ -110,10 +116,29 @@ def adopt(cfg: Config) -> Path:
     if not claude.is_file():
         raise UsageError("--adopt needs an existing hand-written CLAUDE.md")
     text = claude.read_text(encoding="utf-8")
+    if is_generated(claude):
+        raise UsageError("CLAUDE.md is a generated file, not a hand-written policy; restore PROJECT.md from git")
+    if IMPORT_ONLY_RE.match(text):
+        raise UsageError(
+            "CLAUDE.md only imports another file (@...); copy that file to PROJECT.md and run `tazuna render --force`"
+        )
     policy.write_text(text, encoding="utf-8")
     backup = cfg.project_dir / "CLAUDE.md.pre-tazuna.bak"
     backup.write_text(text, encoding="utf-8")
     return backup
+
+
+def back_up_hand_written(cfg: Config) -> list[Path]:
+    """Copy every enabled target that exists without the marker to ``<name>.pre-tazuna.bak``.
+    ``--adopt`` renders with force, which would otherwise overwrite them without a trace."""
+    backups = []
+    for name in cfg.render_targets:
+        out = cfg.project_dir / cfg.targets[name]["path"]
+        backup = out.with_name(out.name + ".pre-tazuna.bak")
+        if out.is_file() and not is_generated(out) and not backup.exists():
+            backup.write_bytes(out.read_bytes())
+            backups.append(backup)
+    return backups
 
 
 def render(
@@ -127,6 +152,10 @@ def render(
     for name in targets or cfg.render_targets:
         if name not in cfg.targets:
             raise UsageError(f"unknown target {name!r}")
+        # The path and import checks in config only cover [render] targets; a --target outside
+        # them could overwrite another target's file or write an import of a file never rendered.
+        if name not in cfg.render_targets:
+            raise UsageError(f"target {name!r} is not in [render] targets; add it there first")
         out = cfg.project_dir / cfg.targets[name]["path"]
         text = render_text(cfg, name, policy_text)
         # Some harnesses stop reading an instruction file at a fixed size (Codex: 32 KiB), so an

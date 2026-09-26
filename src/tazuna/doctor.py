@@ -15,7 +15,7 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from .config import Config, ensure_state_dir, load_config, pre_rename_leftovers, state_dir
+from .config import Config, ensure_state_dir, load_config, pre_rename_leftovers, state_dir, target_path_key
 from .errors import TazunaError
 from .gitstate import safe_git
 from .handoff import ledger_path
@@ -201,6 +201,16 @@ def _check_render(cfg: Config, report: Report) -> None:
                 report.warn(
                     f"render target {res.target}: {rel} is hand-written (use `tazuna render --adopt` or --force)"
                 )
+    # A target taken out of [render] targets leaves its last rendered file behind; harnesses keep
+    # reading that stale copy next to the current one, and render --check no longer looks at it.
+    enabled_paths = {target_path_key(cfg.targets[n]["path"]) for n in cfg.render_targets}
+    for name, spec in sorted(cfg.targets.items()):
+        path = spec.get("path")
+        if name in cfg.render_targets or not path or target_path_key(path) in enabled_paths:
+            continue
+        out = cfg.project_dir / path
+        if out.is_file() and is_generated(out):
+            report.warn(f"{path} was generated for target {name}, which is no longer rendered; delete it")
 
 
 def _check_state(report: Report) -> None:

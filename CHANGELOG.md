@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.4.0 — 2026-09-26
+
+### Changed
+
+- New projects write the policy once. `tazuna init` now enables `["claude-shim", "codex"]` instead of `["claude", "codex", "cursor"]`. The policy goes to `AGENTS.md`, which Codex, Cursor and most other agents read. `CLAUDE.md` holds only an `@AGENTS.md` import plus the Claude appendix. Claude Code reads that import exactly once whether or not its version reads `AGENTS.md` by itself, so no harness loads the policy twice (the old defaults gave Cursor both `project.mdc` and `AGENTS.md`, and gave Claude Code both copies when it was set to read `AGENTS.md` too).
+- Existing projects render exactly as before, including a `tazuna.toml` without `[render] targets`, which still means `["claude", "codex", "cursor"]`. To switch, set `targets = ["claude-shim", "codex"]` (drop `"cursor"` only if your Cursor reads `AGENTS.md`), run `tazuna render`, and delete `.cursor/rules/project.mdc`; `tazuna doctor` now warns about a generated file whose target is no longer rendered. A pack or user config that sets an appendix under `[targets.claude]` needs the same line under `[targets.claude-shim]`.
+- `tazuna render --target NAME` refuses a target that is not in `[render] targets`, so it can no longer overwrite another target's file or write an import of a file that was never rendered.
+
+### Added
+
+- Built-in target `claude-shim` and the target key `import_of`, which renders an `@<path>` import of another target's file instead of a copy of the policy. The imported target must be enabled and must hold the policy itself, and the importing target must sit at the project root (`@` paths resolve relative to the importing file). Two enabled targets may not write the same path, compared after normalising `./` and case.
+
+### Fixed
+
+- `tazuna render --adopt` no longer loses hand-written files. A `CLAUDE.md` that only imports another file, or one that is itself generated, is refused instead of being promoted to `PROJECT.md`, and every other enabled target that exists without the generated marker (a hand-written `AGENTS.md`, say) is copied to `<name>.pre-tazuna.bak` before the forced render overwrites it.
+
 ## 0.3.0 — 2026-09-26
 
 ### Upgrade notes

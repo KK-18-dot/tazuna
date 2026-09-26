@@ -6,7 +6,7 @@ name = "tazuna"
 policy = "PROJECT.md"
 
 [render]
-targets = ["claude", "codex", "cursor"]
+targets = ["claude-shim", "codex"]
 
 [models]
 # Aliases only; no provider-specific ids are required for the offline roles below.

@@ -23,15 +23,16 @@ policy = "PROJECT.md"    # the single source that gets rendered
 
 ```toml
 [render]
-targets = ["claude", "codex", "cursor"]
+targets = ["claude-shim", "codex"]   # the default written by `tazuna init`
 ```
 
 Built-in targets and their output paths:
 
 | target | path |
 |---|---|
-| claude | `CLAUDE.md` |
-| codex | `AGENTS.md` (also read by many other agents) |
+| claude-shim | `CLAUDE.md` with one `@AGENTS.md` import instead of a copy (needs `codex`; default) |
+| claude | `CLAUDE.md` with its own copy of the policy (use instead of `claude-shim`, not with it) |
+| codex | `AGENTS.md` (also read by Cursor and many other agents; default) |
 | cursor | `.cursor/rules/project.mdc` (with frontmatter) |
 | gemini | `GEMINI.md` |
 | copilot | `.github/copilot-instructions.md` |

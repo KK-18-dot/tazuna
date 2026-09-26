@@ -93,12 +93,14 @@ def cmd_init(args: argparse.Namespace) -> int:
 
 
 def cmd_render(args: argparse.Namespace) -> int:
-    from .render import adopt, render
+    from .render import adopt, back_up_hand_written, render
 
     cfg = load_config(args.dir)
     if args.adopt:
         backup = adopt(cfg)
         _out(f"adopted CLAUDE.md into PROJECT.md (backup: {backup.name})")
+        for other in back_up_hand_written(cfg):
+            _out(f"hand-written {other.name.removesuffix('.pre-tazuna.bak')} kept as {other.name}")
         args.force = True
     results = render(cfg, check=args.check, force=args.force, targets=args.target or None)
     bad = oversize = 0

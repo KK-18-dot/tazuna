@@ -10,7 +10,7 @@ tazuna is a small, provider-neutral control plane for teams that use more than o
 
 | | What | Command |
 |---|---|---|
-| 1 | **One policy, many harnesses.** `PROJECT.md` is the single source; `CLAUDE.md`, `AGENTS.md`, `.cursor/rules/project.mdc` (and more) are generated from it and guarded against hand edits. | `tazuna render` |
+| 1 | **One policy, many harnesses.** `PROJECT.md` is the single source; `AGENTS.md` (read by Codex, Cursor and most agents), a `CLAUDE.md` that imports it, and more are generated from it and guarded against hand edits. | `tazuna render` |
 | 2 | **Understandable routing.** A *role* is a named row in `tazuna.toml`: provider, model, effort, timeout, read-only, fallback. Nothing is chosen by heuristics at runtime. | `tazuna routes` |
 | 3 | **Auditable execution.** Every delegated task ends in a `HANDOFF.md` built from measured facts (git diff, exit code, duration, effective model), a typed status, and a JSONL ledger. | `tazuna run` |
 | 4 | **Reproducible evals and diagnostics.** Fixture directories run through the same path and are graded deterministically; `doctor` says what is broken vs. merely optional. | `tazuna eval`, `tazuna doctor` |
@@ -58,7 +58,7 @@ The model ids written by `tazuna init` are examples. Replace them with the ids y
 cd your-project
 tazuna init                  # writes tazuna.toml + PROJECT.md, roles for the CLIs it finds
 $EDITOR PROJECT.md           # describe the project once: purpose, stack, commands, quality gate, do-nots
-tazuna render                # -> CLAUDE.md, AGENTS.md, .cursor/rules/project.mdc
+tazuna render                # -> AGENTS.md, and CLAUDE.md importing it
 tazuna routes                # what each role resolves to, and whether its provider is installed
 tazuna doctor                # OK / WARN / NOTE; exit 1 only on real problems
 ```
@@ -108,7 +108,7 @@ Full docs: [docs/quickstart.md](docs/quickstart.md) · [docs/configuration.md](d
 
 ## Status
 
-0.3.0, alpha. The Claude Code, Codex, and Cursor provider definitions mirror flags used in production; Gemini CLI is marked experimental. Provider CLIs change their flags; if one breaks, override the provider table in your user config and open an issue.
+0.4.0, alpha. The Claude Code, Codex, and Cursor provider definitions mirror flags used in production; Gemini CLI is marked experimental. Provider CLIs change their flags; if one breaks, override the provider table in your user config and open an issue.
 
 ## License
 

@@ -7,8 +7,10 @@ name = "{{name}}"
 policy = "PROJECT.md"          # single source rendered into every target below
 
 [render]
-# Built-in targets: claude, codex, cursor, gemini, copilot, windsurf, cline.
-targets = ["claude", "codex", "cursor"]
+# The policy is written once, to AGENTS.md (codex; Cursor and other AGENTS.md-aware agents read it
+# too), and CLAUDE.md only imports it. Other built-in targets: claude (a full copy for Claude
+# Code), cursor (a .cursor/rules copy), gemini, copilot, windsurf, cline.
+targets = ["claude-shim", "codex"]
 
 [models]
 # Aliases used by roles and by {{model:ALIAS}} tokens inside PROJECT.md.

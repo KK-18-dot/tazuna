@@ -35,7 +35,7 @@ tazuna render --adopt      # CLAUDE.md -> PROJECT.md (backup kept), then renders
 tazuna render
 ```
 
-`PROJECT.md` becomes `CLAUDE.md`, `AGENTS.md`, and `.cursor/rules/project.mdc` (change the list under `[render] targets`; `gemini`, `copilot`, `windsurf`, `cline` are built in). Every generated file starts with a marker comment; tazuna refuses to overwrite files that lack it, and `tazuna guard` lets a harness hook refuse edits to them.
+`PROJECT.md` becomes `AGENTS.md`, which Codex, Cursor and most other agents read, and a `CLAUDE.md` that only imports it with `@AGENTS.md`, so every harness sees one copy of the policy. Change the list under `[render] targets`: `claude` (a full copy for Claude Code), `cursor`, `gemini`, `copilot`, `windsurf` and `cline` are built in. Every generated file starts with a marker comment; tazuna refuses to overwrite files that lack it, and `tazuna guard` lets a harness hook refuse edits to them.
 
 For Claude Code, `tazuna guard --print-hook` prints a `PreToolUse` hook for `.claude/settings.json`. With it, an edit to a generated file asks for confirmation instead of going through; anything else passes. The hook fails open, so `render --check` in CI stays the real gate.
 

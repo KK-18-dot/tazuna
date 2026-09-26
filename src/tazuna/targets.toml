@@ -5,11 +5,22 @@
 #   appendix    default appendix file (relative to project root) appended after the policy
 #   max_bytes   optional: the harness stops reading past this size; `render --check` fails and
 #               `doctor` warns when the rendered file is larger (it is still written)
+#   import_of   optional: instead of a copy of the policy, write one `@<path>` line that imports the
+#               named target's file (the appendix is still appended). That target must be enabled.
 # Packs and tazuna.toml can add targets or override these tables.
 
 [targets.claude]
-description = "Claude Code"
+description = "Claude Code, with its own copy of the policy"
 path = "CLAUDE.md"
+appendix = ".tazuna/appendix/claude.md"
+
+# Claude Code reads CLAUDE.md; whether it also reads AGENTS.md depends on its version and settings.
+# An `@AGENTS.md` import is read exactly once either way, so Claude, Codex and Cursor (which reads
+# AGENTS.md itself) all see one copy of the policy.
+[targets.claude-shim]
+description = "Claude Code, importing AGENTS.md (needs the codex target)"
+path = "CLAUDE.md"
+import_of = "codex"
 appendix = ".tazuna/appendix/claude.md"
 
 [targets.codex]

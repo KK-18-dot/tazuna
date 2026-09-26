@@ -1,11 +1,11 @@
 # tazuna — PROJECT.md
 
-<!-- Single source of project policy. CLAUDE.md, AGENTS.md and .cursor/rules/project.mdc are
+<!-- Single source of project policy. AGENTS.md (the policy) and CLAUDE.md (an import of it) are
      GENERATED from this file by `tazuna render`. Edit here, then re-render. -->
 
 ## Purpose and current state
 
-tazuna is a provider-neutral control plane for AI coding agents: one policy file rendered into every harness, static role-based routing across provider CLIs, a uniform HANDOFF + exit-code result contract, reproducible evals, and diagnostics. This repository dogfoods itself: the files you are reading were rendered by `tazuna render`. Version 0.1.0, alpha.
+tazuna is a provider-neutral control plane for AI coding agents: one policy file rendered into every harness, static role-based routing across provider CLIs, a uniform HANDOFF + exit-code result contract, reproducible evals, and diagnostics. This repository dogfoods itself: the files you are reading were rendered by `tazuna render`. Version 0.4.0, alpha.
 
 ## Stack
 
@@ -40,7 +40,7 @@ tazuna is a provider-neutral control plane for AI coding agents: one policy file
 
 - Add runtime dependencies. `tomllib` and the standard library are enough.
 - Read, write, or log `.env`, `.env.*`, `secrets/**`, or credential files.
-- Edit generated files (`CLAUDE.md`, `AGENTS.md`, `.cursor/rules/project.mdc`); edit `PROJECT.md` and run `tazuna render`.
+- Edit generated files (`CLAUDE.md`, `AGENTS.md`); edit `PROJECT.md` and run `tazuna render`.
 - Add flags to provider definitions that disable a harness's approvals or sandbox (`--dangerously-*`, `--yolo`, `--force`); `run.py` rejects them.
 - Let tests reach a real provider CLI; use the shims in `tests/conftest.py`.
 

@@ -1,6 +1,6 @@
 # example-pack — a template for tazuna packs.
 # Contributes: one provider backed by a script shipped in the pack, one role using it,
-# and an appendix that is appended to the Claude Code target only.
+# and an appendix that is appended to the Claude Code targets (claude and claude-shim) only.
 
 [pack]
 name = "example-pack"
@@ -20,4 +20,7 @@ effort = "low"
 timeout = 60
 
 [targets.claude]
+appendix = "appendix/claude.md"
+
+[targets.claude-shim]
 appendix = "appendix/claude.md"
