@@ -1,7 +1,7 @@
 # Built-in mock provider: deterministic, offline, used by tests and the bundled evals.
-# The response is the task echoed back plus a completion line, unless AGENTPLANE_MOCK_RESPONSE
+# The response is the task echoed back plus a completion line, unless TAZUNA_MOCK_RESPONSE
 # (or [providers.mock] response) says otherwise.
 name = "mock"
-description = "Deterministic offline mock (for tests, evals, and trying agentplane without any CLI)"
+description = "Deterministic offline mock (for tests, evals, and trying tazuna without any CLI)"
 kind = "mock"
 efforts = ["low", "medium", "high"]

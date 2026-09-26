@@ -1,15 +1,15 @@
 # Configuration
 
-agentplane reads TOML from four layers. Later layers override earlier ones table-by-table.
+tazuna reads TOML from four layers. Later layers override earlier ones table-by-table.
 
 | Layer | Where | Purpose |
 |---|---|---|
 | built-in | package data | provider definitions, render targets, `[run]` defaults |
-| user | `$XDG_CONFIG_HOME/agentplane/config.toml` (default `~/.config/agentplane/config.toml`) | personal provider choices; never committed |
+| user | `$XDG_CONFIG_HOME/tazuna/config.toml` (default `~/.config/tazuna/config.toml`) | personal provider choices; never committed |
 | packs | directories listed under `[packs] paths` | shareable bundles of providers, targets, roles, appendices |
-| project | `agentplane.toml` in the project root | the team's policy file name, targets, models, roles |
+| project | `tazuna.toml` in the project root | the team's policy file name, targets, models, roles |
 
-`agentplane doctor` prints the layers it loaded.
+`tazuna doctor` prints the layers it loaded.
 
 ## `[project]`
 
@@ -38,13 +38,13 @@ Built-in targets and their output paths:
 | windsurf | `.windsurfrules` |
 | cline | `.clinerules` |
 
-Each target appends `.agentplane/appendix/<target>.md` if that file exists. Define or override a target:
+Each target appends `.tazuna/appendix/<target>.md` if that file exists. Define or override a target:
 
 ```toml
 [targets.mytool]
 path = "docs/MYTOOL.md"
 frontmatter = "---\nkind: rules\n---\n"
-appendix = ".agentplane/appendix/mytool.md"
+appendix = ".tazuna/appendix/mytool.md"
 max_bytes = 65536        # optional; see below
 ```
 
@@ -54,11 +54,11 @@ Some harnesses read an instruction file only up to a fixed size and silently dro
 
 When the rendered file (frontmatter, marker, policy and appendix together) is larger than `max_bytes`:
 
-- `agentplane render` still writes it and prints a `WARNING` line (exit 0);
-- `agentplane render --check` reports `TOO-LARGE` and exits 1, like drift;
-- `agentplane doctor` reports a WARN.
+- `tazuna render` still writes it and prints a `WARNING` line (exit 0);
+- `tazuna render --check` reports `TOO-LARGE` and exits 1, like drift;
+- `tazuna doctor` reports a WARN.
 
-If you raised the limit in the harness itself (for Codex, `project_doc_max_bytes` in its `config.toml`), raise it here too, for example `[targets.codex] max_bytes = 65536` in `agentplane.toml`. The value must be a positive integer.
+If you raised the limit in the harness itself (for Codex, `project_doc_max_bytes` in its `config.toml`), raise it here too, for example `[targets.codex] max_bytes = 65536` in `tazuna.toml`. The value must be a positive integer.
 
 ## `[models]`
 
@@ -116,26 +116,26 @@ Placeholders available in `command` and the `*_args` lists: `{model}`, `{effort}
 
 With `task_via = "arg"`, `{task}` is substituted where it appears; if it appears nowhere the task is appended as the last argument.
 
-agentplane refuses (exit 3) any provider argv element that switches off the harness's own approvals or sandbox:
+tazuna refuses (exit 3) any provider argv element that switches off the harness's own approvals or sandbox:
 
 - a flag name or config key containing `dangerously` (`--dangerously-skip-permissions`, `--allow-dangerously-skip-permissions`, `-c dangerously_bypass_approvals_and_sandbox=true`), or the flags `--yolo`, `--force`, `-f`, `-y` (also written `--flag=value`);
 - the values `bypassPermissions`, `danger-full-access`, `yolo`, as a separate element (`--permission-mode bypassPermissions`) or as any `=`-separated part (`--sandbox=danger-full-access`, `--config=sandbox_mode=danger-full-access`); `bypassPermissions` and `danger-full-access` are also refused anywhere inside an element, such as JSON passed to `--settings`. Quotes and surrounding whitespace are stripped and case is ignored.
 
-The check covers `command`, `model_args`, `effort_args`, `read_only_args`, `write_args`, `write_mode`, `read_only_mode` and `task_stdin_marker`, after placeholder expansion. The task text is not inspected. `agentplane doctor` applies the same check to every provider table (built-in, user, pack, project) and reports a WARN, so a bad definition shows up before anyone runs it. `-f` and `-y` are refused for every provider, because Cursor and Gemini CLI use them as short forms of `--force` and `--yolo`; if your own CLI uses them for something harmless, use its long option instead.
+The check covers `command`, `model_args`, `effort_args`, `read_only_args`, `write_args`, `write_mode`, `read_only_mode` and `task_stdin_marker`, after placeholder expansion. The task text is not inspected. `tazuna doctor` applies the same check to every provider table (built-in, user, pack, project) and reports a WARN, so a bad definition shows up before anyone runs it. `-f` and `-y` are refused for every provider, because Cursor and Gemini CLI use them as short forms of `--force` and `--yolo`; if your own CLI uses them for something harmless, use its long option instead.
 
 ### Mock provider
 
-`kind = "mock"` runs nothing. Useful for tests, evals of the pipeline itself, and trying agentplane without any CLI.
+`kind = "mock"` runs nothing. Useful for tests, evals of the pipeline itself, and trying tazuna without any CLI.
 
 ```toml
 [providers.mock]
-response = "custom output\nAGENTPLANE-STATUS: DONE"
+response = "custom output\nTAZUNA-STATUS: DONE"
 exit_code = 0
 [providers.mock.writes]
 "notes/out.md" = "content written when not read_only"
 ```
 
-Environment overrides: `AGENTPLANE_MOCK_RESPONSE`, `AGENTPLANE_MOCK_EXIT`, `AGENTPLANE_MOCK_SLEEP`.
+Environment overrides: `TAZUNA_MOCK_RESPONSE`, `TAZUNA_MOCK_EXIT`, `TAZUNA_MOCK_SLEEP`.
 
 ## `[run]`
 
@@ -143,7 +143,7 @@ Environment overrides: `AGENTPLANE_MOCK_RESPONSE`, `AGENTPLANE_MOCK_EXIT`, `AGEN
 [run]
 timeout = 900
 min_output_bytes = 40   # exit 0 with less output → exit 4
-max_depth = 2           # AGENTPLANE_DEPTH guard for nested delegation
+max_depth = 2           # TAZUNA_DEPTH guard for nested delegation
 env_extra = []          # names forwarded to providers in addition to the allowlist
 ```
 
@@ -153,7 +153,7 @@ Allowlist always forwarded: `HOME PATH USER LOGNAME SHELL TERM LANG LC_ALL LC_CT
 
 ```toml
 [packs]
-paths = ["packs/example-pack", "~/agentplane-packs/team"]
+paths = ["packs/example-pack", "~/tazuna-packs/team"]
 ```
 
 See [packs.md](packs.md).
@@ -162,8 +162,8 @@ See [packs.md](packs.md).
 
 | Variable | Effect |
 |---|---|
-| `AGENTPLANE_STATE_DIR` | where logs, `runs.jsonl`, and eval results go (default `$XDG_STATE_HOME/agentplane`); created with mode 0700 when missing |
+| `TAZUNA_STATE_DIR` | where logs, `runs.jsonl`, and eval results go (default `$XDG_STATE_HOME/tazuna`); created with mode 0700 when missing |
 | `XDG_CONFIG_HOME` | location of the user config layer |
-| `AGENTPLANE_DEPTH` | set by agentplane for providers it launches; do not set by hand |
-| `AGENTPLANE_PARENT` | set by agentplane for providers it launches (the id of the launching run) and recorded as `parent` by a nested `agentplane run`. Scripts may set it to their own id (1-200 characters of `A-Z a-z 0-9 . _ : / @ + -`); other values are ignored with a warning. Not a secret |
-| `AGENTPLANE_MOCK_RESPONSE`, `AGENTPLANE_MOCK_EXIT`, `AGENTPLANE_MOCK_SLEEP` | override the mock provider (see above) |
+| `TAZUNA_DEPTH` | set by tazuna for providers it launches; do not set by hand |
+| `TAZUNA_PARENT` | set by tazuna for providers it launches (the id of the launching run) and recorded as `parent` by a nested `tazuna run`. Scripts may set it to their own id (1-200 characters of `A-Z a-z 0-9 . _ : / @ + -`); other values are ignored with a warning. Not a secret |
+| `TAZUNA_MOCK_RESPONSE`, `TAZUNA_MOCK_EXIT`, `TAZUNA_MOCK_SLEEP` | override the mock provider (see above) |

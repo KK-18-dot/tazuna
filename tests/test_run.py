@@ -9,14 +9,14 @@ from pathlib import Path
 
 import pytest
 
-from agentplane import gitstate as git_mod
-from agentplane import handoff as handoff_mod
-from agentplane import run as run_mod
-from agentplane.config import load_config, state_dir
-from agentplane.errors import EXIT_EMPTY, EXIT_TIMEOUT, SafetyError, UsageError
-from agentplane.handoff import read_records, self_report
-from agentplane.routing import resolve_route
-from agentplane.run import build_command, run_task
+from tazuna import gitstate as git_mod
+from tazuna import handoff as handoff_mod
+from tazuna import run as run_mod
+from tazuna.config import load_config, state_dir
+from tazuna.errors import EXIT_EMPTY, EXIT_TIMEOUT, SafetyError, UsageError
+from tazuna.handoff import read_records, self_report
+from tazuna.routing import resolve_route
+from tazuna.run import build_command, run_task
 
 
 def _run(project: Path, role: str, task: str = "do the thing", **kw):
@@ -62,11 +62,11 @@ def test_fake_cli_receives_command_env_and_task(project: Path, fake_cli, sandbox
     argv = (sandbox / "fakecli.argv").read_text().split("\n")
     assert argv[:6] == ["--mode", "write", "--model", "fake-fast-1", "--effort", "high"]
     stdin = (sandbox / "fakecli.stdin").read_text()
-    assert stdin.startswith("[agentplane preamble]")
+    assert stdin.startswith("[tazuna preamble]")
     assert stdin.rstrip().endswith("implement feature X")
     env = (sandbox / "fakecli.env").read_text()
     assert "MY_SECRET_TOKEN" not in env
-    assert "AGENTPLANE_DEPTH=1" in env
+    assert "TAZUNA_DEPTH=1" in env
     assert "HOME=" in env
 
 
@@ -84,7 +84,7 @@ def test_explicit_overrides_win_over_role(project: Path, fake_cli, sandbox: Path
 
 
 def test_changed_files_are_measured_from_git(project: Path, fake_cli) -> None:
-    fake_cli(script="echo new > created.txt; echo ok; echo 'AGENTPLANE-STATUS: DONE'")
+    fake_cli(script="echo new > created.txt; echo ok; echo 'TAZUNA-STATUS: DONE'")
     outcome = _run(project, "shim")
     assert "?? created.txt" in outcome.record.changed
     assert "- ?? created.txt" in (project / "HANDOFF.md").read_text()
@@ -104,12 +104,12 @@ def test_changed_sees_edits_to_dirty_files_and_files_in_untracked_dirs(project: 
     (project / "a.txt").write_text("edited before the run\n")
     (project / "nd").mkdir()
     (project / "nd" / "one.txt").write_text("1\n")
-    fake_cli(script="echo more >> a.txt; echo 2 > nd/two.txt; echo ok; echo 'AGENTPLANE-STATUS: DONE'")
+    fake_cli(script="echo more >> a.txt; echo 2 > nd/two.txt; echo ok; echo 'TAZUNA-STATUS: DONE'")
     changed = _run(project, "shim").record.changed
     assert " M a.txt (modified before the run and again during it)" in changed
     assert "?? nd/two.txt" in changed
     assert not any("nd/one.txt" in line for line in changed)
-    assert not any("agentplane.toml" in line for line in changed)  # dirty before, untouched
+    assert not any("tazuna.toml" in line for line in changed)  # dirty before, untouched
 
 
 def test_changed_lists_commits_made_by_the_provider(project: Path, fake_cli) -> None:
@@ -119,7 +119,7 @@ def test_changed_lists_commits_made_by_the_provider(project: Path, fake_cli) -> 
     fake_cli(
         script="echo new > c.txt; git add c.txt a.txt; "
         "git -c user.name=p -c user.email=p@example.invalid commit -qm provider; "
-        "echo ok; echo 'AGENTPLANE-STATUS: DONE'"
+        "echo ok; echo 'TAZUNA-STATUS: DONE'"
     )
     changed = _run(project, "shim").record.changed
     assert re.fullmatch(r"commits: [0-9a-f]{7}\.\.[0-9a-f]{7} \(1\)", changed[0]), changed
@@ -132,7 +132,7 @@ def test_changed_lists_root_commits_from_an_unborn_head(project: Path, fake_cli)
     fake_cli(
         script="echo one > r1.txt; git add r1.txt; git -c user.name=p -c user.email=p@x.invalid commit -qm one; "
         "echo two > r2.txt; git add r2.txt; git -c user.name=p -c user.email=p@x.invalid commit -qm two; "
-        "echo ok; echo 'AGENTPLANE-STATUS: DONE'"
+        "echo ok; echo 'TAZUNA-STATUS: DONE'"
     )
     changed = _run(project, "shim").record.changed
     assert re.fullmatch(r"commits: \(none\)\.\.[0-9a-f]{7} \(2\)", changed[0]), changed
@@ -141,14 +141,14 @@ def test_changed_lists_root_commits_from_an_unborn_head(project: Path, fake_cli)
 
 def test_changed_sees_a_retargeted_symlink(project: Path, fake_cli) -> None:
     (project / "lnk").symlink_to("one")
-    fake_cli(script="ln -sfn two lnk; echo ok; echo 'AGENTPLANE-STATUS: DONE'")
+    fake_cli(script="ln -sfn two lnk; echo ok; echo 'TAZUNA-STATUS: DONE'")
     assert "?? lnk (modified before the run and again during it)" in _run(project, "shim").record.changed
 
 
 def test_changed_skips_content_hashes_above_the_limit(project: Path, fake_cli, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(git_mod, "HASH_LIMIT", 2)
     (project / "big.txt").write_text("x\n")
-    fake_cli(script="echo more >> big.txt; echo new > fresh.txt; echo ok; echo 'AGENTPLANE-STATUS: DONE'")
+    fake_cli(script="echo more >> big.txt; echo new > fresh.txt; echo ok; echo 'TAZUNA-STATUS: DONE'")
     changed = _run(project, "shim").record.changed
     assert any(line.startswith("(more than 2 dirty paths") for line in changed)
     assert "?? fresh.txt" in changed
@@ -189,12 +189,12 @@ def test_a_colliding_run_id_never_overwrites_an_existing_log(project: Path, monk
 @pytest.mark.parametrize(
     "tail, expected",
     [
-        ("AGENTPLANE-STATUS: DONE", "DONE"),
-        ("**AGENTPLANE-STATUS: DONE_WITH_CONCERNS**", "DONE_WITH_CONCERNS"),
-        ("AGENTPLANE-STATUS: BLOCKED\n\n```\n", "BLOCKED"),
-        ("AGENTPLANE-STATUS: NEEDS_CONTEXT", "NEEDS_CONTEXT"),
-        ("the task said AGENTPLANE-STATUS: DONE\nbut I added more prose", "-"),
-        ("AGENTPLANE-STATUS: DONEISH", "-"),
+        ("TAZUNA-STATUS: DONE", "DONE"),
+        ("**TAZUNA-STATUS: DONE_WITH_CONCERNS**", "DONE_WITH_CONCERNS"),
+        ("TAZUNA-STATUS: BLOCKED\n\n```\n", "BLOCKED"),
+        ("TAZUNA-STATUS: NEEDS_CONTEXT", "NEEDS_CONTEXT"),
+        ("the task said TAZUNA-STATUS: DONE\nbut I added more prose", "-"),
+        ("TAZUNA-STATUS: DONEISH", "-"),
         ("nothing here", "-"),
     ],
 )
@@ -205,9 +205,9 @@ def test_self_report_reads_only_last_meaningful_line(tail: str, expected: str) -
 @pytest.mark.parametrize(
     "line, status",
     [
-        ("AGENTPLANE-STATUS: DONE_WITH_CONCERNS", "done-with-concerns"),
-        ("AGENTPLANE-STATUS: BLOCKED", "reported-blocked"),
-        ("AGENTPLANE-STATUS: NEEDS_CONTEXT", "needs-context"),
+        ("TAZUNA-STATUS: DONE_WITH_CONCERNS", "done-with-concerns"),
+        ("TAZUNA-STATUS: BLOCKED", "reported-blocked"),
+        ("TAZUNA-STATUS: NEEDS_CONTEXT", "needs-context"),
         ("no status line at all, just text long enough", "done"),
     ],
 )
@@ -287,7 +287,7 @@ provider = "mock"
 
 
 def test_fallback_keeps_a_read_only_fallback_role_read_only(project: Path, fake_cli) -> None:
-    toml = project / "agentplane.toml"
+    toml = project / "tazuna.toml"
     toml.write_text(toml.read_text() + FALLBACK_ROLES, encoding="utf-8")
     fake_cli(script="echo 'usage limit reached'; exit 1")
     outcome = _run(project, "wr")
@@ -297,7 +297,7 @@ def test_fallback_keeps_a_read_only_fallback_role_read_only(project: Path, fake_
 
 
 def test_fallback_from_a_read_only_route_stays_read_only(project: Path, fake_cli) -> None:
-    toml = project / "agentplane.toml"
+    toml = project / "tazuna.toml"
     toml.write_text(toml.read_text() + FALLBACK_ROLES, encoding="utf-8")
     fake_cli(script="echo 'usage limit reached'; exit 1")
     outcome = _run(project, "ro_first")
@@ -315,7 +315,7 @@ def test_cancel_stops_the_provider_and_still_records_the_run(
     marker = sandbox / "marker"
     fake_cli(script=f"sleep 2; touch {marker}; echo finished")
     proc = subprocess.Popen(
-        [sys.executable, "-m", "agentplane", "run", "--role", "shim", "--dir", str(project), "--quiet", "slow task"],
+        [sys.executable, "-m", "tazuna", "run", "--role", "shim", "--dir", str(project), "--quiet", "slow task"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
@@ -330,7 +330,7 @@ def test_cancel_stops_the_provider_and_still_records_the_run(
     _, err = proc.communicate(timeout=40)
     assert proc.returncode == code, err
     time.sleep(3)
-    assert not marker.exists(), "the provider kept running after agentplane was cancelled"
+    assert not marker.exists(), "the provider kept running after tazuna was cancelled"
     rows = read_records()
     assert len(rows) == 1, "cancelled must never trigger the fallback"
     assert rows[0]["status"] == "cancelled" and rows[0]["exit"] == code and rows[0]["provider"] == "fakecli"
@@ -360,7 +360,7 @@ def test_out_must_be_inside_dir_and_not_symlink(project: Path, sandbox: Path) ->
 
 
 def test_depth_limit(project: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("AGENTPLANE_DEPTH", "2")
+    monkeypatch.setenv("TAZUNA_DEPTH", "2")
     with pytest.raises(SafetyError, match="depth limit"):
         _run(project, "dry")
 
@@ -441,7 +441,7 @@ def test_empty_task_is_rejected(project: Path) -> None:
 def test_secrets_in_provider_output_are_redacted_in_handoff(project: Path, fake_cli) -> None:
     fake_cli(
         script="printf 'y%.0s' $(seq 300); echo; echo 'token ghp_abcdefghijklmnop123 sk-abcdefghij12345'; "
-        "echo 'AGENTPLANE-STATUS: DONE'"
+        "echo 'TAZUNA-STATUS: DONE'"
     )
     _run(project, "shim")
     handoff = (project / "HANDOFF.md").read_text()
@@ -470,7 +470,7 @@ provider = "argtpl"
 
 @pytest.mark.parametrize("role, recorded", [("arg", ["argcli", "--print", "<task>"]), ("argtpl", None)])
 def test_ledger_never_records_the_task_text(project: Path, fake_cli, role: str, recorded) -> None:
-    toml = project / "agentplane.toml"
+    toml = project / "tazuna.toml"
     toml.write_text(toml.read_text() + ARG_PROVIDERS, encoding="utf-8")
     fake_cli("argcli")
     task = "rotate the payment keys ghp_abcdefghijklmnop123 now\nsecond line with private detail"
@@ -478,7 +478,7 @@ def test_ledger_never_records_the_task_text(project: Path, fake_cli, role: str, 
     raw = (state_dir() / "runs.jsonl").read_text()
     row = json.loads(raw)
     assert "second line with private detail" not in raw
-    assert "[agentplane preamble]" not in raw
+    assert "[tazuna preamble]" not in raw
     assert "ghp_abcdefghijklmnop123" not in raw
     assert row["task_head"] == "rotate the payment keys gh-REDACTED now"
     assert row["command"] == (recorded or ["argcli", "--prompt=<task>", "--print"])
@@ -512,7 +512,7 @@ def _mode(path: Path) -> int:
 
 
 def test_state_files_are_private_and_the_provider_umask_is_untouched(project: Path, fake_cli, sandbox: Path) -> None:
-    fake_cli(script=f"umask > {sandbox / 'umask.txt'}; echo 'enough output to count'; echo 'AGENTPLANE-STATUS: DONE'")
+    fake_cli(script=f"umask > {sandbox / 'umask.txt'}; echo 'enough output to count'; echo 'TAZUNA-STATUS: DONE'")
     previous = os.umask(0o022)
     try:
         record = _run(project, "shim").record
@@ -528,7 +528,7 @@ def test_state_files_are_private_and_the_provider_umask_is_untouched(project: Pa
 def test_secrets_are_masked_in_the_log_kept_on_disk(project: Path, fake_cli) -> None:
     fake_cli(
         script="printf 'y%.0s' $(seq 300); echo; echo 'token ghp_abcdefghijklmnop123 sk-abcdefghij12345'; "
-        "echo '```'; printf 'bad \\377 byte\\n'; echo 'AGENTPLANE-STATUS: DONE'"
+        "echo '```'; printf 'bad \\377 byte\\n'; echo 'TAZUNA-STATUS: DONE'"
     )
     log = Path(_run(project, "shim").record.log).read_bytes()
     assert b"ghp_abcdefghijklmnop123" not in log and b"sk-abcdefghij12345" not in log
@@ -556,7 +556,7 @@ def test_git_snapshot_never_runs_commands_planted_in_git_config(
         "printf 'a.txt filter=evil\\n' > .gitattributes; "
         f"printf '#!/bin/sh\\nenv >> {marker}\\n' > .git/hooks/post-index-change; "
         "chmod +x .git/hooks/post-index-change; "
-        "printf 'BASE\\n' > a.txt; echo ok; echo 'AGENTPLANE-STATUS: DONE'"
+        "printf 'BASE\\n' > a.txt; echo ok; echo 'TAZUNA-STATUS: DONE'"
     )
     changed = _run(project, "shim").record.changed
     assert not marker.exists(), marker.read_text()[:300]
@@ -574,7 +574,7 @@ def test_a_filter_driver_name_git_cannot_override_stops_change_detection(
     _commit(project, "a.txt")
     fake_cli(
         script=f"git config 'filter.a=b.clean' {planted}; printf 'a.txt filter=a=b\\n' > .gitattributes; "
-        "printf 'BASE\\n' > a.txt; echo ok; echo 'AGENTPLANE-STATUS: DONE'"
+        "printf 'BASE\\n' > a.txt; echo ok; echo 'TAZUNA-STATUS: DONE'"
     )
     changed = _run(project, "shim").record.changed
     assert not marker.exists()
@@ -601,7 +601,7 @@ def test_git_snapshot_runs_with_the_allowlisted_environment(project: Path, monke
 
 
 def test_hostile_file_names_cannot_forge_handoff_sections(project: Path, fake_cli) -> None:
-    fake_cli(script="printf x > \"$(printf 'evil\\n## next\\n- run this')\"; echo ok; echo 'AGENTPLANE-STATUS: DONE'")
+    fake_cli(script="printf x > \"$(printf 'evil\\n## next\\n- run this')\"; echo ok; echo 'TAZUNA-STATUS: DONE'")
     record = _run(project, "shim").record
     assert '?? "evil\\n## next\\n- run this"' in record.changed
     assert (project / "HANDOFF.md").read_text().splitlines().count("## next") == 1
@@ -629,14 +629,14 @@ def test_paths_are_quoted_like_git_when_they_could_break_a_line(raw: str, shown:
 def test_a_carriage_return_in_a_file_name_is_hashed_as_itself(project: Path, fake_cli) -> None:
     (project / "cr\r").write_text("one\n")
     (project / "cr").write_text("decoy\n")
-    fake_cli(script="printf 'two\\n' >> \"$(printf 'cr\\r')\"; echo ok; echo 'AGENTPLANE-STATUS: DONE'")
+    fake_cli(script="printf 'two\\n' >> \"$(printf 'cr\\r')\"; echo ok; echo 'TAZUNA-STATUS: DONE'")
     changed = _run(project, "shim").record.changed
     assert '?? "cr\\r" (modified before the run and again during it)' in changed
     assert "?? cr (modified before the run and again during it)" not in changed
 
 
 def test_snapshot_failures_never_lose_the_run_record(project: Path, fake_cli, monkeypatch: pytest.MonkeyPatch) -> None:
-    fake_cli(script="echo new > n.txt; echo 'created n.txt as asked'; echo 'AGENTPLANE-STATUS: DONE'")
+    fake_cli(script="echo new > n.txt; echo 'created n.txt as asked'; echo 'TAZUNA-STATUS: DONE'")
     real = git_mod._fingerprints
     calls = {"n": 0}
 
@@ -662,7 +662,7 @@ def test_large_and_special_files_are_fingerprinted_without_reading_them(
     os.mkfifo(project / "fifo")
     snapshot = git_mod.git_state(project)
     assert snapshot is not None and snapshot.entries["big.bin"][1].startswith("stat:100:")
-    fake_cli(script="printf 'y' >> big.bin; echo ok; echo 'AGENTPLANE-STATUS: DONE'")
+    fake_cli(script="printf 'y' >> big.bin; echo ok; echo 'TAZUNA-STATUS: DONE'")
     changed = _run(project, "shim").record.changed
     assert "?? big.bin (modified before the run and again during it)" in changed
     assert not any("fifo" in line for line in changed)
@@ -677,7 +677,7 @@ def test_changed_reports_git_metadata_and_newly_hidden_paths(project: Path, fake
         "git update-index --assume-unchanged b.txt; echo edited > b.txt; "
         "mkdir -p .git/hooks .git/info; printf '#!/bin/sh\\n' > .git/hooks/pre-commit; "
         "echo hidden.txt >> .git/info/exclude; echo s > hidden.txt; "
-        "git config core.hooksPath /tmp/elsewhere; echo ok; echo 'AGENTPLANE-STATUS: DONE'"
+        "git config core.hooksPath /tmp/elsewhere; echo ok; echo 'TAZUNA-STATUS: DONE'"
     )
     changed = _run(project, "shim").record.changed
     assert "(hidden from git status: skip-worktree set) a.txt" in changed
@@ -713,7 +713,7 @@ def test_leftover_children_are_stopped_and_cannot_write_unmasked_output(
     fake_cli(
         script=f'bash -c \'trap "" TERM; echo $$ > {pidfile}; '
         "while :; do echo late sk-ABCDEFGHIJKLMNOP; sleep 0.05; done' & "
-        "sleep 0.3; echo 'enough output for the check'; echo 'AGENTPLANE-STATUS: DONE'"
+        "sleep 0.3; echo 'enough output for the check'; echo 'TAZUNA-STATUS: DONE'"
     )
     try:
         record = _run(project, "shim").record
@@ -735,7 +735,7 @@ def test_a_signal_while_output_is_still_collected_cancels_without_fallback(
         f"echo 'usage limit reached'; touch {exited}; exit 1"
     )
     proc = subprocess.Popen(
-        [sys.executable, "-m", "agentplane", "run", "--role", "shim", "--dir", str(project), "--quiet", "task"],
+        [sys.executable, "-m", "tazuna", "run", "--role", "shim", "--dir", str(project), "--quiet", "task"],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
@@ -765,7 +765,7 @@ def test_final_output_is_kept_when_a_detached_child_holds_the_pipe(
     daemon = f"import os, time; os.setsid(); open({str(pidfile)!r}, 'w').write(str(os.getpid())); time.sleep(8)"
     fake_cli(
         script=f"{sys.executable} -c \"{daemon}\" & echo 'enough output for the minimum-size check'; "
-        "echo 'AGENTPLANE-STATUS: DONE'"
+        "echo 'TAZUNA-STATUS: DONE'"
     )
     try:
         record = _run(project, "shim").record
@@ -780,7 +780,7 @@ def test_nested_out_cannot_be_redirected_through_a_swapped_directory(project: Pa
     (project / "a" / "b").mkdir(parents=True)
     fake_cli(
         script=f"rm -rf a; ln -s {outside} a; echo 'enough output for the minimum-size check'; "
-        "echo 'AGENTPLANE-STATUS: DONE'"
+        "echo 'TAZUNA-STATUS: DONE'"
     )
     outcome = _run(project, "shim", out=project / "a" / "b" / "HANDOFF.md")
     assert not (outside / "b" / "HANDOFF.md").exists()
@@ -822,7 +822,7 @@ def test_a_task_with_a_nul_byte_is_refused_before_launch(project: Path, fake_cli
 def test_a_task_file_that_is_not_utf8_is_a_usage_error(project: Path, sandbox: Path) -> None:
     bad = sandbox / "task.txt"
     bad.write_bytes(b"fix caf\xe9 bug")
-    cli = [sys.executable, "-m", "agentplane", "run", "--role", "dry", "--dir", str(project), "--quiet"]
+    cli = [sys.executable, "-m", "tazuna", "run", "--role", "dry", "--dir", str(project), "--quiet"]
     proc = subprocess.run([*cli, "--task-file", str(bad)], capture_output=True, text=True)
     assert proc.returncode == 2 and "not valid UTF-8" in proc.stderr and "Traceback" not in proc.stderr
     proc = subprocess.run(cli, input=b"fix caf\xe9 bug", capture_output=True)
@@ -875,23 +875,23 @@ def test_parent_comes_from_the_environment_and_the_provider_gets_this_run_id(
     project: Path, fake_cli, sandbox: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     fake_cli()
-    monkeypatch.setenv("AGENTPLANE_PARENT", "ci:pipeline/42@main+retry-1")
+    monkeypatch.setenv("TAZUNA_PARENT", "ci:pipeline/42@main+retry-1")
     record = _run(project, "shim").record
     assert record.parent == "ci:pipeline/42@main+retry-1"
     assert read_records()[0]["parent"] == "ci:pipeline/42@main+retry-1"
     env = (sandbox / "fakecli.env").read_text().splitlines()
-    assert f"AGENTPLANE_PARENT={record.id}" in env
-    assert "AGENTPLANE_DEPTH=1" in env
+    assert f"TAZUNA_PARENT={record.id}" in env
+    assert "TAZUNA_DEPTH=1" in env
 
 
 @pytest.mark.parametrize("value", ["has spaces", "x" * 201, "semi;colon", "new\nline", "trailing\n", "$(id)"])
 def test_an_invalid_parent_is_ignored_with_a_warning(
     project: Path, monkeypatch: pytest.MonkeyPatch, capsys, value: str
 ) -> None:
-    monkeypatch.setenv("AGENTPLANE_PARENT", value)
+    monkeypatch.setenv("TAZUNA_PARENT", value)
     record = _run(project, "dry").record
     assert record.parent is None
-    assert "ignoring AGENTPLANE_PARENT" in capsys.readouterr().err
+    assert "ignoring TAZUNA_PARENT" in capsys.readouterr().err
 
 
 def test_parent_is_null_without_the_variable(project: Path) -> None:
@@ -902,8 +902,8 @@ def test_parent_is_null_without_the_variable(project: Path) -> None:
 def test_a_nested_run_records_the_outer_run_as_parent(project: Path, fake_cli, sandbox: Path) -> None:
     nested = sandbox / "nested.json"
     fake_cli(
-        script=f"mkdir -p sub && {sys.executable} -m agentplane run --provider mock --dir sub --json "
-        f"'nested task' > {nested}; echo ok; echo 'AGENTPLANE-STATUS: DONE'"
+        script=f"mkdir -p sub && {sys.executable} -m tazuna run --provider mock --dir sub --json "
+        f"'nested task' > {nested}; echo ok; echo 'TAZUNA-STATUS: DONE'"
     )
     outer = _run(project, "shim").record
     inner = json.loads(nested.read_text())

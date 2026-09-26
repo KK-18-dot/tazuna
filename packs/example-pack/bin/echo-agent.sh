@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# A stand-in "agent": prints what it received and reports completion in the agentplane
+# A stand-in "agent": prints what it received and reports completion in the tazuna
 # vocabulary. Replace the body with a call to any CLI to turn this pack into a real provider.
 set -euo pipefail
 effort="-"
@@ -15,4 +15,4 @@ echo "[echo-agent] task follows:"
 printf '%s\n' "${args[@]:-}"
 echo
 echo "No files were changed."
-echo "AGENTPLANE-STATUS: DONE"
+echo "TAZUNA-STATUS: DONE"

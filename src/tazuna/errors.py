@@ -20,7 +20,7 @@ EXIT_CANCELLED_INT = 130
 EXIT_CANCELLED_TERM = 143
 
 
-class AgentplaneError(Exception):
+class TazunaError(Exception):
     """Base error; ``code`` is the process exit code."""
 
     code = EXIT_FAILED
@@ -31,13 +31,13 @@ class AgentplaneError(Exception):
             self.code = code
 
 
-class ConfigError(AgentplaneError):
+class ConfigError(TazunaError):
     code = EXIT_USAGE
 
 
-class UsageError(AgentplaneError):
+class UsageError(TazunaError):
     code = EXIT_USAGE
 
 
-class SafetyError(AgentplaneError):
+class SafetyError(TazunaError):
     code = EXIT_SAFETY

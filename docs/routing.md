@@ -2,7 +2,7 @@
 
 ## The one rule
 
-`agentplane run --role NAME` does exactly what `agentplane routes NAME` prints. There is no runtime heuristic, no "auto" model, and no silent inheritance from your interactive session's settings. If a value is not in the role, the provider's declared default, or an explicit flag, the run does not start.
+`tazuna run --role NAME` does exactly what `tazuna routes NAME` prints. There is no runtime heuristic, no "auto" model, and no silent inheritance from your interactive session's settings. If a value is not in the role, the provider's declared default, or an explicit flag, the run does not start.
 
 That is deliberate. Mixed-provider setups fail in two quiet ways: a headless run inherits an expensive interactive model and burns quota, or a CLI silently falls back to a default when it rejects a flag. Static roles plus fail-closed validation remove both.
 
@@ -11,7 +11,7 @@ That is deliberate. Mixed-provider setups fail in two quiet ways: a headless run
 For each of model, effort, timeout, read-only:
 
 1. explicit flag on `run` (`--model`, `--effort`, `--timeout`, `--read-only`)
-2. the role's field in `agentplane.toml`
+2. the role's field in `tazuna.toml`
 3. the provider's `default_model` / `default_effort` / `[run] timeout`
 4. otherwise: no model or effort argument is passed (the CLI's own default), timeout 900 s
 
@@ -19,12 +19,12 @@ Efforts are validated against the provider's `efforts` list before anything runs
 
 ## Matching routes to your plan
 
-agentplane does not call model APIs; it runs provider CLIs under whatever login or billing those CLIs already have. That makes the plan you are on a routing input:
+tazuna does not call model APIs; it runs provider CLIs under whatever login or billing those CLIs already have. That makes the plan you are on a routing input:
 
 - **Subscription CLIs** (Claude Code, Codex, Cursor, Gemini CLI on a consumer or team plan): quota is per plan, so give each provider its own role and use `fallback` to move work when one plan is exhausted (status `quota-exhausted` triggers it).
 - **API-key billing**: configure the CLI for API use as its vendor documents; cost is per token, so prefer low effort and small models for `impl`-style roles and reserve strong models for `review`.
 - **Local only** (`ollama`): free and offline; mark roles `read_only = true` because `ollama run` cannot edit files.
-- **Mixed teams**: keep the shared `agentplane.toml` provider-neutral (roles named by purpose) and let each person map providers and model ids in their user config.
+- **Mixed teams**: keep the shared `tazuna.toml` provider-neutral (roles named by purpose) and let each person map providers and model ids in their user config.
 
 Model ids in the `init` template are placeholders. Use the ids your plan enables; unknown ids fail at the CLI with status `failed`, never silently.
 
@@ -57,4 +57,4 @@ A fallback never loosens read-only. If the first run was read-only (from the rol
 
 ## Observability
 
-`agentplane runs` lists the ledger; each row has provider, role, effective model and effort, exit, status, duration, changed files, and the log path. Because routing is static, the ledger's `role` column is enough to answer "which route is consuming which provider" without any extra instrumentation.
+`tazuna runs` lists the ledger; each row has provider, role, effective model and effort, exit, status, duration, changed files, and the log path. Because routing is static, the ledger's `role` column is enough to answer "which route is consuming which provider" without any extra instrumentation.

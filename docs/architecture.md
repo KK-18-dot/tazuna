@@ -1,14 +1,14 @@
 # Architecture
 
-agentplane is four thin layers over one configuration file. Each layer has one input, one output, and one command.
+tazuna is four thin layers over one configuration file. Each layer has one input, one output, and one command.
 
 ```
-             PROJECT.md (+ .agentplane/appendix/<target>.md)
+             PROJECT.md (+ .tazuna/appendix/<target>.md)
                   │  render.py  ─ marker, {{model:…}} expansion, hand-written guard
                   ▼
    CLAUDE.md  AGENTS.md  .cursor/rules/project.mdc  GEMINI.md  …   (generated targets)
 
-agentplane.toml ─ config.py ─┐
+tazuna.toml ─ config.py ─────┐
 user config ─────────────────┤ layered, validated, fail-closed
 packs/*/pack.toml ───────────┤
 built-in providers/targets ──┘
@@ -39,7 +39,7 @@ built-in providers/targets ──┘
 
 **Measured results, typed claims.** HANDOFF facts come from git and the process; the provider's completion claim is recorded but visibly labelled as a claim. Exit codes never depend on the claim, so automation stays predictable.
 
-**Structural safety, not pattern matching.** The environment is an allowlist, the output path must sit inside the working directory, `$HOME` is refused as a target, delegation depth is capped, and commands that disable a harness's own approvals are rejected. These are enforced by agentplane; the provider's own sandbox handles the rest.
+**Structural safety, not pattern matching.** The environment is an allowlist, the output path must sit inside the working directory, `$HOME` is refused as a target, delegation depth is capped, and commands that disable a harness's own approvals are rejected. These are enforced by tazuna; the provider's own sandbox handles the rest.
 
 **Graceful absence.** Missing provider CLIs are NOTE-level unless a role depends on them; `init` only generates roles for what it finds; the mock provider makes every command usable offline.
 
@@ -63,6 +63,6 @@ built-in providers/targets ──┘
 
 ## Lineage
 
-agentplane distils a private, multi-provider development control plane that ran for several months across Claude Code, Codex, and Cursor. The parts that proved their worth were the contract layer (one policy file rendered everywhere), a bridge that made delegation return a uniform HANDOFF plus exit code, role-based routing kept in one ledger, and code-graded evals. Everything tied to one machine (scheduling, multiplexer integration, personal quotas and model choices, hook stacks) was left out.
+tazuna distils a private, multi-provider development control plane that ran for several months across Claude Code, Codex, and Cursor. The parts that proved their worth were the contract layer (one policy file rendered everywhere), a bridge that made delegation return a uniform HANDOFF plus exit code, role-based routing kept in one ledger, and code-graded evals. Everything tied to one machine (scheduling, multiplexer integration, personal quotas and model choices, hook stacks) was left out.
 
 Design points borrowed from public projects, with credit: the typed completion vocabulary and "do not trust the report" stance popularised by Superpowers; AGENTS.md as a harness-neutral target as practised by Codex and ECC; deterministic code graders and frozen baselines with signed diffs from common eval practice.

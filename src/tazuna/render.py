@@ -17,7 +17,7 @@ from .config import Config
 from .errors import ConfigError, UsageError
 
 MARKER = "<!-- GENERATED-FROM: PROJECT.md"
-HEADER = "<!-- GENERATED-FROM: PROJECT.md by agentplane — do not edit. Edit PROJECT.md and run `agentplane render`. -->"
+HEADER = "<!-- GENERATED-FROM: PROJECT.md by tazuna — do not edit. Edit PROJECT.md and run `tazuna render`. -->"
 MODEL_TOKEN_RE = re.compile(r"\{\{model:([A-Za-z0-9_-]+)\}\}")
 
 
@@ -88,7 +88,7 @@ def render_text(cfg: Config, target: str, policy_text: str) -> str:
 
 def _atomic_write(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp = tempfile.mkstemp(prefix=".agentplane-", dir=str(path.parent))
+    fd, tmp = tempfile.mkstemp(prefix=".tazuna-", dir=str(path.parent))
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as fh:
             fh.write(text)
@@ -111,7 +111,7 @@ def adopt(cfg: Config) -> Path:
         raise UsageError("--adopt needs an existing hand-written CLAUDE.md")
     text = claude.read_text(encoding="utf-8")
     policy.write_text(text, encoding="utf-8")
-    backup = cfg.project_dir / "CLAUDE.md.pre-agentplane.bak"
+    backup = cfg.project_dir / "CLAUDE.md.pre-tazuna.bak"
     backup.write_text(text, encoding="utf-8")
     return backup
 
@@ -121,9 +121,7 @@ def render(
 ) -> list[RenderResult]:
     policy = cfg.policy_file
     if not policy.is_file():
-        raise UsageError(
-            f"{policy} not found (run `agentplane init`, or `agentplane render --adopt` to promote CLAUDE.md)"
-        )
+        raise UsageError(f"{policy} not found (run `tazuna init`, or `tazuna render --adopt` to promote CLAUDE.md)")
     policy_text = policy.read_text(encoding="utf-8")
     results: list[RenderResult] = []
     for name in targets or cfg.render_targets:

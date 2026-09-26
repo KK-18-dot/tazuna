@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Upgrade notes
+
+- The project is renamed from `agentplane` to `tazuna` (手綱, "the reins"). There is no compatibility layer: the package, the command, the module, the config file and the environment variables all change, and the old names are not read. To move a project, `pip install tazuna` (and uninstall `agentplane`), rename `agentplane.toml` to `tazuna.toml`, rename a `.agentplane/` directory to `.tazuna/`, rename `~/.config/agentplane/` to `~/.config/tazuna/`, replace `AGENTPLANE_` with `TAZUNA_` in scripts and eval `check.sh` files, change hook commands to `tazuna guard --hook claude`, replace `AGENTPLANE-STATUS:` with `TAZUNA-STATUS:` in any policy text that tells agents how to report (the self-report line is only read under the new name), and run `tazuna render`. Generated files from agentplane are still recognized, because the marker does not carry the tool name. The run ledger moves to `$XDG_STATE_HOME/tazuna`; the old ledger stays where it was.
+
 ### Fixed
 
 - `agentplane guard --hook claude` and `agentplane guard --print-hook` failed with "unrecognized arguments" and exit 2, so the hook setting that the README and quickstart recommend made Claude Code block every Edit / Write / MultiEdit call. `--hook` and `--print-hook` are now real options, and the paths form is unchanged. Tests now call `guard` through the CLI.

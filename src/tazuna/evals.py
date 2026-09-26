@@ -1,11 +1,11 @@
-"""Reproducible evals: fixture directories → agentplane run → deterministic checks → report.
+"""Reproducible evals: fixture directories → tazuna run → deterministic checks → report.
 
 A suite is a directory of cases. Each case directory contains:
 
     task.md       the task text (required)
     seed/         files copied into a fresh git-initialised workdir before the run (optional)
     check.sh      code grader; exit 0 = PASS (optional). Receives WORKDIR as $1, and the env
-                  AGENTPLANE_LOG, AGENTPLANE_HANDOFF, AGENTPLANE_EXIT, AGENTPLANE_STATUS
+                  TAZUNA_LOG, TAZUNA_HANDOFF, TAZUNA_EXIT, TAZUNA_STATUS
     case.toml     expectations and per-case overrides (optional):
                     role = "impl"           read_only = true      timeout = 300
                     expect_exit = 0         expect_status = "done"
@@ -32,7 +32,7 @@ from pathlib import Path
 from typing import Any
 
 from .config import Config, ensure_state_dir
-from .errors import AgentplaneError, UsageError
+from .errors import TazunaError, UsageError
 from .handoff import mask_secrets
 from .routing import resolve_route
 from .run import cancel_exit_code, run_task
@@ -92,9 +92,9 @@ def _prepare_workdir(case_dir: Path, workdir: Path) -> None:
         shutil.copytree(seed, workdir, dirs_exist_ok=True)
     env = {
         **os.environ,
-        "GIT_AUTHOR_NAME": "agentplane-eval",
+        "GIT_AUTHOR_NAME": "tazuna-eval",
         "GIT_AUTHOR_EMAIL": "eval@localhost",
-        "GIT_COMMITTER_NAME": "agentplane-eval",
+        "GIT_COMMITTER_NAME": "tazuna-eval",
         "GIT_COMMITTER_EMAIL": "eval@localhost",
     }
     for args in (["init", "-q"], ["add", "-A"], ["commit", "-q", "--allow-empty", "-m", "seed"]):
@@ -119,10 +119,10 @@ def _check(
     if check.is_file():
         env = {
             **os.environ,
-            "AGENTPLANE_LOG": str(log_path),
-            "AGENTPLANE_HANDOFF": str(handoff),
-            "AGENTPLANE_EXIT": str(exit_code),
-            "AGENTPLANE_STATUS": status,
+            "TAZUNA_LOG": str(log_path),
+            "TAZUNA_HANDOFF": str(handoff),
+            "TAZUNA_EXIT": str(exit_code),
+            "TAZUNA_STATUS": status,
         }
         try:
             res = subprocess.run(
@@ -221,7 +221,7 @@ def run_suite(
     report_path = results_dir / "report.md"
     report_path.write_text(render_report(results, None), encoding="utf-8")
     if stopped:
-        raise AgentplaneError(f"eval stopped by a signal during {stopped}; results so far: {results_path}", stop_code)
+        raise TazunaError(f"eval stopped by a signal during {stopped}; results so far: {results_path}", stop_code)
     return results_path, results
 
 
@@ -306,7 +306,7 @@ def render_report(results: list[CaseResult] | list[dict[str, Any]], baseline: li
     rows = [asdict(r) if isinstance(r, CaseResult) else r for r in results]
     rates = _pass_rates(rows)
     base_rates = _pass_rates(baseline) if baseline else {}
-    lines = ["# agentplane eval report", ""]
+    lines = ["# tazuna eval report", ""]
     if rows:
         lines.append(f"suite: {rows[0]['suite']}  runs: {len(rows)}  cases: {len(rates)}")
         lines.append("")

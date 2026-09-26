@@ -25,14 +25,14 @@ def sandbox(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setenv("HOME", str(home))
     monkeypatch.setenv("XDG_CONFIG_HOME", str(home / ".config"))
     monkeypatch.setenv("XDG_STATE_HOME", str(home / ".local" / "state"))
-    monkeypatch.setenv("AGENTPLANE_STATE_DIR", str(tmp_path / "state"))
+    monkeypatch.setenv("TAZUNA_STATE_DIR", str(tmp_path / "state"))
     monkeypatch.setenv("PATH", f"{fakebin}:{SYSTEM_PATH}")
     for var in (
-        "AGENTPLANE_DEPTH",
-        "AGENTPLANE_PARENT",
-        "AGENTPLANE_MOCK_RESPONSE",
-        "AGENTPLANE_MOCK_EXIT",
-        "AGENTPLANE_MOCK_SLEEP",
+        "TAZUNA_DEPTH",
+        "TAZUNA_PARENT",
+        "TAZUNA_MOCK_RESPONSE",
+        "TAZUNA_MOCK_EXIT",
+        "TAZUNA_MOCK_SLEEP",
     ):
         monkeypatch.delenv(var, raising=False)
     # Path.home() reads HOME on POSIX; make sure nothing cached the real one.
@@ -42,11 +42,11 @@ def sandbox(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 @pytest.fixture
 def project(sandbox: Path) -> Path:
-    """A git-initialised project directory outside HOME with a minimal agentplane.toml."""
+    """A git-initialised project directory outside HOME with a minimal tazuna.toml."""
     proj = sandbox / "work" / "proj"
     proj.mkdir(parents=True)
     subprocess.run(["git", "init", "-q"], cwd=proj, check=True)
-    (proj / "agentplane.toml").write_text(
+    (proj / "tazuna.toml").write_text(
         """
 [project]
 name = "proj"
@@ -114,7 +114,7 @@ def write_fake_cli(sandbox: Path, name: str, script: str) -> Path:
 def fake_cli(sandbox: Path):
     def _make(
         name: str = "fakecli",
-        script: str = "echo 'work done, verified with the test suite'; echo 'AGENTPLANE-STATUS: DONE'",
+        script: str = "echo 'work done, verified with the test suite'; echo 'TAZUNA-STATUS: DONE'",
     ) -> Path:
         return write_fake_cli(sandbox, name, script)
 
@@ -122,9 +122,9 @@ def fake_cli(sandbox: Path):
 
 
 def run_cli(*args: str, cwd: Path | None = None) -> subprocess.CompletedProcess[str]:
-    """Run the CLI in-process-equivalent via `python -m agentplane` for end-to-end checks."""
+    """Run the CLI in-process-equivalent via `python -m tazuna` for end-to-end checks."""
     import sys
 
     return subprocess.run(
-        [sys.executable, "-m", "agentplane", *args], capture_output=True, text=True, cwd=cwd, env={**os.environ}
+        [sys.executable, "-m", "tazuna", *args], capture_output=True, text=True, cwd=cwd, env={**os.environ}
     )

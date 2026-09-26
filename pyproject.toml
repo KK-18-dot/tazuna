@@ -3,13 +3,13 @@ requires = ["hatchling>=1.24"]
 build-backend = "hatchling.build"
 
 [project]
-name = "agentplane"
+name = "tazuna"
 version = "0.2.0"
 description = "Define project policy once, render it into every agent harness, route work across providers, and get auditable results."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
-authors = [{ name = "agentplane contributors" }]
+authors = [{ name = "tazuna contributors" }]
 keywords = ["ai-agents", "claude-code", "codex", "cursor", "agents-md", "routing", "evals"]
 classifiers = [
   "Development Status :: 3 - Alpha",
@@ -29,14 +29,14 @@ dependencies = []
 dev = ["pytest>=8", "ruff>=0.5"]
 
 [project.scripts]
-agentplane = "agentplane.cli:main"
+tazuna = "tazuna.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/KK-18-dot/agentplane"
-Issues = "https://github.com/KK-18-dot/agentplane/issues"
+Homepage = "https://github.com/KK-18-dot/tazuna"
+Issues = "https://github.com/KK-18-dot/tazuna/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/agentplane"]
+packages = ["src/tazuna"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

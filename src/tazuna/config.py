@@ -3,9 +3,9 @@
 Layers, lowest precedence first:
 
 1. built-in defaults shipped with the package (providers, targets)
-2. user config       ``$XDG_CONFIG_HOME/agentplane/config.toml`` (personal provider choices)
+2. user config       ``$XDG_CONFIG_HOME/tazuna/config.toml`` (personal provider choices)
 3. packs             directories listed under ``[packs] paths`` (each has ``pack.toml``)
-4. project config    ``agentplane.toml`` in the project root
+4. project config    ``tazuna.toml`` in the project root
 
 Later layers override earlier ones table-by-table (``[roles.x]`` replaces ``[roles.x]``,
 scalar keys under ``[run]`` merge key-by-key).
@@ -24,7 +24,7 @@ from typing import Any
 
 from .errors import ConfigError
 
-PROJECT_CONFIG_NAME = "agentplane.toml"
+PROJECT_CONFIG_NAME = "tazuna.toml"
 PACK_CONFIG_NAME = "pack.toml"
 
 # No leading "-": a model id is passed as the value after --model and must not read as a flag.
@@ -66,15 +66,15 @@ DEFAULT_RUN = {
 
 def user_config_dir() -> Path:
     base = os.environ.get("XDG_CONFIG_HOME") or str(Path.home() / ".config")
-    return Path(base) / "agentplane"
+    return Path(base) / "tazuna"
 
 
 def state_dir() -> Path:
-    base = os.environ.get("AGENTPLANE_STATE_DIR")
+    base = os.environ.get("TAZUNA_STATE_DIR")
     if base:
         return Path(base)
     xdg = os.environ.get("XDG_STATE_HOME") or str(Path.home() / ".local" / "state")
-    return Path(xdg) / "agentplane"
+    return Path(xdg) / "tazuna"
 
 
 def ensure_state_dir(*parts: str) -> Path:
@@ -105,7 +105,7 @@ def _read_toml(path: Path) -> dict[str, Any]:
 def _builtin_defaults() -> dict[str, Any]:
     """Providers and targets shipped in the package data directory."""
     data: dict[str, Any] = {"providers": {}, "targets": {}, "run": dict(DEFAULT_RUN)}
-    pkg = resources.files("agentplane")
+    pkg = resources.files("tazuna")
     for entry in (pkg / "providers").iterdir():
         if entry.name.endswith(".toml"):
             with entry.open("rb") as fh:
@@ -224,7 +224,7 @@ def load_config(
     if project_file.is_file() and not ignore_project:
         project_data = _read_toml(project_file)
     elif require_project:
-        raise ConfigError(f"no {PROJECT_CONFIG_NAME} in {project_dir} (run `agentplane init` first)")
+        raise ConfigError(f"no {PROJECT_CONFIG_NAME} in {project_dir} (run `tazuna init` first)")
 
     # Packs listed by the user layer and the project layer are both honoured; project last.
     pack_paths: list[str] = []
@@ -332,8 +332,8 @@ def validate(cfg: Config) -> None:
 
 
 def default_project_config(name: str) -> str:
-    """The agentplane.toml written by ``agentplane init``."""
-    template = resources.files("agentplane").joinpath("templates/agentplane.toml").read_text(encoding="utf-8")
+    """The tazuna.toml written by ``tazuna init``."""
+    template = resources.files("tazuna").joinpath("templates/tazuna.toml").read_text(encoding="utf-8")
     return template.replace("{{name}}", name)
 
 

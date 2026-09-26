@@ -23,6 +23,6 @@ jobs:
       - run: pytest
       - name: contract self-check
         run: |
-          agentplane render --check
-          agentplane doctor
-          agentplane eval run evals/suites/smoke --role dry
+          tazuna render --check
+          tazuna doctor
+          tazuna eval run evals/suites/smoke --role dry

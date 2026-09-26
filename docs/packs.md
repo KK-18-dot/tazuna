@@ -1,6 +1,6 @@
 # Packs
 
-A pack is a directory with a `pack.toml` that contributes providers, render targets, roles, model aliases, and appendix files. Packs are the only extension mechanism; they use the same tables as `agentplane.toml`, so there is nothing new to learn.
+A pack is a directory with a `pack.toml` that contributes providers, render targets, roles, model aliases, and appendix files. Packs are the only extension mechanism; they use the same tables as `tazuna.toml`, so there is nothing new to learn.
 
 ```toml
 # pack.toml
@@ -27,9 +27,9 @@ reviewer = "some-model-id"
 Enable it:
 
 ```toml
-# agentplane.toml (or ~/.config/agentplane/config.toml)
+# tazuna.toml (or ~/.config/tazuna/config.toml)
 [packs]
-paths = ["packs/example-pack", "~/agentplane-packs/team-review"]
+paths = ["packs/example-pack", "~/tazuna-packs/team-review"]
 ```
 
 Rules:
@@ -38,7 +38,7 @@ Rules:
 - `{pack_dir}` in `command` and `binary` resolves to the pack's directory so packs can ship scripts.
 - Relative `appendix` paths in a pack resolve inside the pack.
 - A pack overriding a built-in target's `appendix` only changes that field; `path` and `frontmatter` stay.
-- `agentplane packs` lists what is loaded; `agentplane doctor` validates the merged result.
+- `tazuna packs` lists what is loaded; `tazuna doctor` validates the merged result.
 
 Distribute a pack as a git repository or a directory in a monorepo. There is no registry; a pack is a path.
 

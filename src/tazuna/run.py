@@ -4,7 +4,7 @@ Safety boundaries (all fail closed, exit 3):
 - the working directory must exist and must not be $HOME or an ancestor of it
 - the HANDOFF output path must be inside the working directory and must not be a symlink
 - only an allowlist of environment variables reaches the provider process
-- a provider may delegate once more (AGENTPLANE_DEPTH), never deeper than [run] max_depth
+- a provider may delegate once more (TAZUNA_DEPTH), never deeper than [run] max_depth
 - provider commands may not contain flags that disable the harness's own sandbox/approvals
 """
 
@@ -28,9 +28,9 @@ from .errors import (
     EXIT_CANCELLED_TERM,
     EXIT_EMPTY,
     EXIT_TIMEOUT,
-    AgentplaneError,
     ConfigError,
     SafetyError,
+    TazunaError,
     UsageError,
 )
 from .gitstate import diff_git_state, git_state
@@ -48,8 +48,8 @@ from .handoff import (
 )
 from .routing import Route, provider_status, resolve_route
 
-DEPTH_VAR = "AGENTPLANE_DEPTH"
-PARENT_VAR = "AGENTPLANE_PARENT"
+DEPTH_VAR = "TAZUNA_DEPTH"
+PARENT_VAR = "TAZUNA_PARENT"
 PARENT_RE = re.compile(r"^[A-Za-z0-9._:/@+-]{1,200}$")
 # Claude Code's --dangerously-skip-permissions / --allow-dangerously-skip-permissions and Codex's
 # --dangerously-bypass-approvals-and-sandbox (also as a config key).
@@ -133,7 +133,7 @@ def check_depth(cfg: Config) -> int:
 
 
 def parent_from_env(*, warn: bool = True) -> str | None:
-    """The caller's lineage id from AGENTPLANE_PARENT, if it is a plain token.
+    """The caller's lineage id from TAZUNA_PARENT, if it is a plain token.
 
     It ends up in the ledger that other tools parse, so anything outside a conservative
     character set is dropped rather than recorded.
@@ -145,7 +145,7 @@ def parent_from_env(*, warn: bool = True) -> str | None:
         return raw
     if warn:
         print(
-            f"agentplane: warning: ignoring {PARENT_VAR} (expected 1-200 characters of A-Z a-z 0-9 . _ : / @ + -)",
+            f"tazuna: warning: ignoring {PARENT_VAR} (expected 1-200 characters of A-Z a-z 0-9 . _ : / @ + -)",
             file=sys.stderr,
         )
     return None
@@ -191,7 +191,7 @@ def forbidden_in_definition(spec: dict) -> list[tuple[str, str]]:
 def empty_mcp_path() -> Path:
     """The empty MCP config handed to Claude Code. Its content is checked on every call, because
     a file that lists servers would silently give a delegated run the tools it was meant to lack."""
-    template = resources.files("agentplane").joinpath("templates/empty-mcp.json").read_text(encoding="utf-8")
+    template = resources.files("tazuna").joinpath("templates/empty-mcp.json").read_text(encoding="utf-8")
     path = ensure_state_dir() / "empty-mcp.json"
     for _ in range(3):
         try:
@@ -209,7 +209,7 @@ def empty_mcp_path() -> Path:
         with os.fdopen(fd, "w", encoding="utf-8") as fh:
             fh.write(template)
         return path
-    raise AgentplaneError(f"cannot prepare the empty MCP config at {path}")
+    raise TazunaError(f"cannot prepare the empty MCP config at {path}")
 
 
 def build_command(cfg: Config, route: Route, task: str, target: Path) -> tuple[list[str], str | None]:
@@ -272,7 +272,7 @@ def build_env(cfg: Config, route: Route, depth: int, run_id: str) -> dict[str, s
     names = cfg.env_allowlist() + list(cfg.providers[route.provider].get("env_extra", []) or [])
     env = {name: os.environ[name] for name in names if name in os.environ}
     env[DEPTH_VAR] = str(depth + 1)
-    # Not a secret: lets a nested `agentplane run` record which run launched it.
+    # Not a secret: lets a nested `tazuna run` record which run launched it.
     env[PARENT_VAR] = run_id
     return env
 
@@ -295,22 +295,22 @@ def _create_log(provider: str) -> tuple[str, Path, int]:
             return run_id, log_path, os.open(log_path, flags, 0o600)
         except FileExistsError:
             continue
-    raise AgentplaneError(f"could not allocate a unique run id in {log_dir}")
+    raise TazunaError(f"could not allocate a unique run id in {log_dir}")
 
 
 def _run_mock(cfg: Config, route: Route, task: str, target: Path, log: BinaryIO, echo: bool, trap: CancelTrap) -> int:
     spec = cfg.providers[route.provider]
-    response = os.environ.get("AGENTPLANE_MOCK_RESPONSE")
+    response = os.environ.get("TAZUNA_MOCK_RESPONSE")
     if response is None:
         response = spec.get("response")
     if response is None:
         response = (
             f"[mock provider] model={route.model or '-'} effort={route.effort or '-'} read_only={route.read_only}\n"
-            f"Task received ({len(task)} chars):\n{task}\n\nAGENTPLANE-STATUS: DONE\n"
+            f"Task received ({len(task)} chars):\n{task}\n\nTAZUNA-STATUS: DONE\n"
         )
-    code_raw = os.environ.get("AGENTPLANE_MOCK_EXIT", str(spec.get("exit_code", 0)))
+    code_raw = os.environ.get("TAZUNA_MOCK_EXIT", str(spec.get("exit_code", 0)))
     code = int(code_raw) if str(code_raw).lstrip("-").isdigit() else 0
-    sleep = float(os.environ.get("AGENTPLANE_MOCK_SLEEP", "0") or 0)
+    sleep = float(os.environ.get("TAZUNA_MOCK_SLEEP", "0") or 0)
     if not trap.sleep(min(sleep, route.timeout)):
         log.write(b"[mock] cancelled\n")
         return trap.exit_code
@@ -335,7 +335,7 @@ class CancelTrap:
     """Turn SIGINT / SIGTERM / SIGHUP into a recorded cancellation while a run is in progress.
 
     Providers start in their own session so a terminal's Ctrl-C never reaches them directly.
-    Without this trap agentplane itself died on the signal and left the provider running, with
+    Without this trap tazuna itself died on the signal and left the provider running, with
     no HANDOFF and no ledger row. The handler only records the signal (raising inside
     Popen.wait could lose the child's status); the wait loop in ``_run_cli`` stops the
     provider's process group, and any signal received before the run's status is decided makes
@@ -407,7 +407,7 @@ def _run_cli(
             start_new_session=True,
         )
     except OSError as exc:
-        raise AgentplaneError(f"cannot start provider: {exc}") from exc
+        raise TazunaError(f"cannot start provider: {exc}") from exc
 
     # Once the run is over the log is masked and rewritten; output that arrives later is drained
     # (so a straggler never blocks on a full pipe) but never written.
@@ -525,7 +525,7 @@ def run_task(
     if not status.available:
         raise UsageError(
             f"provider {route.provider} is not available: {status.note}. "
-            f"Run `agentplane doctor`, or choose another role/provider."
+            f"Run `tazuna doctor`, or choose another role/provider."
         )
 
     full_task = PREAMBLE + task
@@ -560,14 +560,14 @@ def run_task(
         changed = diff_git_state(before, git_state(target))
         cancelled = trap.received
         if cancelled is not None:
-            # A provider's own exit status 130/143 is an ordinary failure; only agentplane's trap
+            # A provider's own exit status 130/143 is an ordinary failure; only tazuna's trap
             # makes a run "cancelled", and a cancelled run is never classified or retried.
             exit_code, kind = trap.exit_code, None
-            print(f"agentplane: cancelled by {signal.Signals(cancelled).name}; provider stopped", file=sys.stderr)
+            print(f"tazuna: cancelled by {signal.Signals(cancelled).name}; provider stopped", file=sys.stderr)
         else:
             if code == 0 and len(masked) < int(cfg.run.get("min_output_bytes", 200)):
                 print(
-                    f"agentplane: warning: exit 0 but output is shorter than min_output_bytes: {log_path}",
+                    f"tazuna: warning: exit 0 but output is shorter than min_output_bytes: {log_path}",
                     file=sys.stderr,
                 )
                 code = EXIT_EMPTY
@@ -614,7 +614,7 @@ def run_task(
         if late.received is not None:
             return RunOutcome(record.exit, record.status, record, stop_signal=late.received)
         print(
-            f"agentplane: {route.provider} reported {kind}; retrying once via fallback role {route.fallback}",
+            f"tazuna: {route.provider} reported {kind}; retrying once via fallback role {route.fallback}",
             file=sys.stderr,
         )
         # Fallback may only tighten read-only: passing False here would override a fallback
@@ -642,7 +642,7 @@ def run_task(
         append_record(record)
     if late.received is not None:
         print(
-            f"agentplane: {signal.Signals(late.received).name} arrived after the run finished; the record is complete",
+            f"tazuna: {signal.Signals(late.received).name} arrived after the run finished; the record is complete",
             file=sys.stderr,
         )
     return RunOutcome(record.exit, record.status, record, stop_signal=cancelled or late.received)
@@ -654,6 +654,6 @@ def _write_result(record: RunRecord, task: str, log_text: str, next_note: str) -
     try:
         write_handoff(record, task, log_text, next_note)
     except Exception as exc:  # the row must be written whatever went wrong here
-        print(f"agentplane: cannot write HANDOFF: {exc}", file=sys.stderr)
+        print(f"tazuna: cannot write HANDOFF: {exc}", file=sys.stderr)
         record.exit = 1
         record.status = "handoff-write-failed"

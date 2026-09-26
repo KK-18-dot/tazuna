@@ -1,6 +1,6 @@
-# agentplane.toml — project configuration for agentplane.
+# tazuna.toml — project configuration for tazuna.
 # Docs: docs/configuration.md. Personal provider choices belong in
-# ~/.config/agentplane/config.toml (same format), not in the repository.
+# ~/.config/tazuna/config.toml (same format), not in the repository.
 
 [project]
 name = "{{name}}"
@@ -15,19 +15,19 @@ targets = ["claude", "codex", "cursor"]
 # Values are literal model ids for the provider that will run them. The ids below are EXAMPLES:
 # which ids you can use depends on your plan with each provider (subscription CLI login or API
 # billing). Replace them with ids your plan enables, or override them in
-# ~/.config/agentplane/config.toml so the repository stays plan-neutral.
+# ~/.config/tazuna/config.toml so the repository stays plan-neutral.
 fast = "claude-sonnet-5"
 strong = "claude-opus-5"
 codex_default = "gpt-5.6-luna"
 local = "gemma4:e2b"
-{{models_extra}}# Model ids that must not reappear in [models] or in rendered files. `agentplane doctor` checks.
+{{models_extra}}# Model ids that must not reappear in [models] or in rendered files. `tazuna doctor` checks.
 retired = []
 
-# Roles are the unit of routing: `agentplane run --role NAME "task"`.
+# Roles are the unit of routing: `tazuna run --role NAME "task"`.
 # provider = a built-in or user-defined provider; model = alias from [models] or a literal id;
 # effort must be one the provider supports; read_only = never let the provider modify files;
 # fallback = role retried once when the provider reports quota exhaustion or a missing login.
-# `agentplane routes` shows what each role resolves to and whether its provider is installed.
+# `tazuna routes` shows what each role resolves to and whether its provider is installed.
 {{roles}}
 [run]
 timeout = 900            # default seconds when a role has no timeout

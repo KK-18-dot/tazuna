@@ -1,4 +1,4 @@
-# example-pack — a template for agentplane packs.
+# example-pack — a template for tazuna packs.
 # Contributes: one provider backed by a script shipped in the pack, one role using it,
 # and an appendix that is appended to the Claude Code target only.
 

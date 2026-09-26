@@ -4,8 +4,8 @@ name: release
 # through trusted publishing (no API token stored in the repository).
 #
 # One-time setup by the repository owner (done for 0.1.0), after which the `publish` job runs automatically:
-#   1. On PyPI: project "agentplane" → Publishing → add GitHub publisher
-#      (owner KK-18-dot, repository agentplane, workflow release.yml, environment pypi).
+#   1. On PyPI: project "tazuna" → Publishing → add GitHub publisher
+#      (owner KK-18-dot, repository tazuna, workflow release.yml, environment pypi).
 #   2. On GitHub: Settings → Environments → create "pypi".
 #   3. On GitHub: Settings → Variables → Actions → PYPI_TRUSTED_PUBLISHER = true.
 # Until step 3 is done the publish job is skipped, so a release never fails on a missing publisher.
@@ -29,10 +29,10 @@ jobs:
         run: |
           python -m venv /tmp/v
           /tmp/v/bin/pip install -q dist/*.whl
-          /tmp/v/bin/agentplane --version
-          /tmp/v/bin/agentplane init --dir /tmp/p
-          /tmp/v/bin/agentplane render --dir /tmp/p
-          /tmp/v/bin/agentplane run --role dry --dir /tmp/p --quiet "release smoke"
+          /tmp/v/bin/tazuna --version
+          /tmp/v/bin/tazuna init --dir /tmp/p
+          /tmp/v/bin/tazuna render --dir /tmp/p
+          /tmp/v/bin/tazuna run --role dry --dir /tmp/p --quiet "release smoke"
       - uses: actions/upload-artifact@v4
         with:
           name: dist

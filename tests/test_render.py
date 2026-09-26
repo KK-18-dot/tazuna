@@ -2,11 +2,11 @@ from pathlib import Path
 
 import pytest
 
-from agentplane.cli import main
-from agentplane.config import load_config
-from agentplane.doctor import run_doctor
-from agentplane.errors import ConfigError, UsageError
-from agentplane.render import HEADER, adopt, is_generated, render
+from tazuna.cli import main
+from tazuna.config import load_config
+from tazuna.doctor import run_doctor
+from tazuna.errors import ConfigError, UsageError
+from tazuna.render import HEADER, adopt, is_generated, render
 
 
 def test_render_writes_all_targets_with_marker_and_model_expansion(project: Path) -> None:
@@ -60,7 +60,7 @@ def test_adopt_promotes_claude_md(project: Path) -> None:
 
 def test_appendix_is_appended_per_target(project: Path) -> None:
     cfg = load_config(project)
-    appendix = project / ".agentplane" / "appendix"
+    appendix = project / ".tazuna" / "appendix"
     appendix.mkdir(parents=True)
     (appendix / "claude.md").write_text("Claude-only note.\n", encoding="utf-8")
     render(cfg)
@@ -82,7 +82,7 @@ def test_builtin_codex_target_declares_the_codex_read_limit(sandbox: Path) -> No
 
 
 def test_target_over_max_bytes_is_written_with_a_warning_and_fails_check(project: Path, capsys) -> None:
-    toml = project / "agentplane.toml"
+    toml = project / "tazuna.toml"
     toml.write_text(toml.read_text() + "\n[targets.codex]\nmax_bytes = 300\n", encoding="utf-8")
     (project / "PROJECT.md").write_text("# proj\n\n" + "policy line\n" * 40, encoding="utf-8")
     cfg = load_config(project)
@@ -105,7 +105,7 @@ def test_target_over_max_bytes_is_written_with_a_warning_and_fails_check(project
 
 
 def test_max_bytes_must_be_a_positive_integer(project: Path) -> None:
-    toml = project / "agentplane.toml"
+    toml = project / "tazuna.toml"
     toml.write_text(toml.read_text() + '\n[targets.codex]\nmax_bytes = "big"\n', encoding="utf-8")
     with pytest.raises(ConfigError, match="max_bytes must be a positive integer"):
         load_config(project)

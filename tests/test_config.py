@@ -2,8 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from agentplane.config import load_config
-from agentplane.errors import ConfigError
+from tazuna.config import load_config
+from tazuna.errors import ConfigError
 
 
 def test_builtin_providers_and_targets_load(sandbox: Path) -> None:
@@ -22,7 +22,7 @@ def test_project_layer_overrides_and_validates(project: Path) -> None:
 
 
 def test_user_config_layer_is_below_project(project: Path, sandbox: Path) -> None:
-    user = sandbox / "home" / ".config" / "agentplane"
+    user = sandbox / "home" / ".config" / "tazuna"
     user.mkdir(parents=True)
     (user / "config.toml").write_text('[models]\nfast = "user-fast"\nextra = "user-extra"\n', encoding="utf-8")
     cfg = load_config(project)
@@ -50,7 +50,7 @@ def test_user_config_layer_is_below_project(project: Path, sandbox: Path) -> Non
 def test_validation_fails_closed(sandbox: Path, snippet: str, message: str) -> None:
     proj = sandbox / "work" / "v"
     proj.mkdir(parents=True)
-    (proj / "agentplane.toml").write_text(snippet, encoding="utf-8")
+    (proj / "tazuna.toml").write_text(snippet, encoding="utf-8")
     with pytest.raises(ConfigError, match=message):
         load_config(proj)
 
@@ -58,7 +58,7 @@ def test_validation_fails_closed(sandbox: Path, snippet: str, message: str) -> N
 def test_invalid_toml_is_a_config_error(sandbox: Path) -> None:
     proj = sandbox / "work" / "t"
     proj.mkdir(parents=True)
-    (proj / "agentplane.toml").write_text("[roles\n", encoding="utf-8")
+    (proj / "tazuna.toml").write_text("[roles\n", encoding="utf-8")
     with pytest.raises(ConfigError, match="invalid TOML"):
         load_config(proj)
 
@@ -87,7 +87,7 @@ provider = "packtool"
     )
     proj = sandbox / "work" / "p"
     proj.mkdir(parents=True)
-    (proj / "agentplane.toml").write_text(f'[packs]\npaths = ["{pack}"]\n', encoding="utf-8")
+    (proj / "tazuna.toml").write_text(f'[packs]\npaths = ["{pack}"]\n', encoding="utf-8")
     cfg = load_config(proj)
     assert cfg.providers["packtool"]["command"][0] == f"{pack}/bin/tool"
     assert cfg.targets["demo"]["appendix"] == str(pack / "appendix.md")
@@ -98,6 +98,6 @@ provider = "packtool"
 def test_missing_pack_is_an_error(sandbox: Path) -> None:
     proj = sandbox / "work" / "m"
     proj.mkdir(parents=True)
-    (proj / "agentplane.toml").write_text('[packs]\npaths = ["./nope"]\n', encoding="utf-8")
+    (proj / "tazuna.toml").write_text('[packs]\npaths = ["./nope"]\n', encoding="utf-8")
     with pytest.raises(ConfigError, match="pack not found"):
         load_config(proj)

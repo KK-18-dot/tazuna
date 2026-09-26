@@ -16,9 +16,9 @@ paths = ["packs/example-pack"]
 Then:
 
 ```bash
-agentplane packs
-agentplane routes echo
-agentplane run --role echo "Say hello"
+tazuna packs
+tazuna routes echo
+tazuna run --role echo "Say hello"
 ```
 
 Copy the directory, rename it, and replace the script with a call to any CLI to make a real provider pack. See `docs/packs.md`.

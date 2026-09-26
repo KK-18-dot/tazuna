@@ -1,8 +1,8 @@
-# agentplane.toml — this repository's own configuration (agentplane dogfoods itself).
-# Personal provider choices belong in ~/.config/agentplane/config.toml, not here.
+# tazuna.toml — this repository's own configuration (tazuna dogfoods itself).
+# Personal provider choices belong in ~/.config/tazuna/config.toml, not here.
 
 [project]
-name = "agentplane"
+name = "tazuna"
 policy = "PROJECT.md"
 
 [render]
@@ -12,7 +12,7 @@ targets = ["claude", "codex", "cursor"]
 # Aliases only; no provider-specific ids are required for the offline roles below.
 retired = []
 
-# Only offline roles are defined here so `agentplane doctor` is clean on any machine and in CI.
+# Only offline roles are defined here so `tazuna doctor` is clean on any machine and in CI.
 # Add roles for your own provider CLIs in the user config layer, for example:
 #   [roles.impl]
 #   provider = "claude"

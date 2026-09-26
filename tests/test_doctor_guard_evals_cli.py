@@ -8,15 +8,15 @@ from pathlib import Path
 
 import pytest
 
-from agentplane import doctor as doctor_mod
-from agentplane.cli import main
-from agentplane.config import load_config, state_dir
-from agentplane.doctor import run_doctor
-from agentplane.errors import AgentplaneError
-from agentplane.evals import load_results, render_report, run_suite
-from agentplane.guard import check_paths, claude_hook
-from agentplane.handoff import read_records
-from agentplane.render import render
+from tazuna import doctor as doctor_mod
+from tazuna.cli import main
+from tazuna.config import load_config, state_dir
+from tazuna.doctor import run_doctor
+from tazuna.errors import TazunaError
+from tazuna.evals import load_results, render_report, run_suite
+from tazuna.guard import check_paths, claude_hook
+from tazuna.handoff import read_records
+from tazuna.render import render
 
 # ---- doctor -----------------------------------------------------------------------------------
 
@@ -27,8 +27,8 @@ def _levels(report):
 
 def test_doctor_all_ok_after_render(project: Path) -> None:
     render(load_config(project))
-    (project / "agentplane.toml").write_text(
-        (project / "agentplane.toml").read_text().replace('provider = "fakecli"', 'provider = "mock"'), encoding="utf-8"
+    (project / "tazuna.toml").write_text(
+        (project / "tazuna.toml").read_text().replace('provider = "fakecli"', 'provider = "mock"'), encoding="utf-8"
     )
     report = run_doctor(project)
     assert report.warnings == 0, report.render()
@@ -59,7 +59,7 @@ def test_doctor_detects_retired_models_and_tracked_secret_names(project: Path) -
 
 
 def test_doctor_warns_on_forbidden_flags_before_anything_runs(project: Path, capsys) -> None:
-    toml = project / "agentplane.toml"
+    toml = project / "tazuna.toml"
     toml.write_text(
         toml.read_text()
         + '\n[providers.risky]\ncommand = ["risky", "--sandbox", "{permission_mode}"]\n'
@@ -133,7 +133,7 @@ def test_status_refuses_git_where_a_filter_cannot_be_neutralised(project: Path, 
 def test_doctor_reports_broken_config_as_warn(sandbox: Path) -> None:
     proj = sandbox / "work" / "broken"
     proj.mkdir(parents=True)
-    (proj / "agentplane.toml").write_text('[roles.x]\nprovider = "ghost"\n', encoding="utf-8")
+    (proj / "tazuna.toml").write_text('[roles.x]\nprovider = "ghost"\n', encoding="utf-8")
     report = run_doctor(proj)
     assert report.warnings == 1 and "configuration" in report.findings[-1].message
 
@@ -172,7 +172,7 @@ def test_guard_cli_print_hook_and_paths(project: Path, capsys) -> None:
     render(load_config(project))
     assert main(["guard", "--print-hook"]) == 0
     snippet = json.loads(capsys.readouterr().out)
-    assert snippet["hooks"]["PreToolUse"][0]["hooks"][0]["command"] == "agentplane guard --hook claude"
+    assert snippet["hooks"]["PreToolUse"][0]["hooks"][0]["command"] == "tazuna guard --hook claude"
     assert main(["guard", str(project / "CLAUDE.md"), str(project / "PROJECT.md")]) == 2
     assert main(["guard", str(project / "PROJECT.md")]) == 0
 
@@ -189,7 +189,7 @@ def _suite(sandbox: Path) -> Path:
         'expect_exit = 0\nexpect_status = "done"\nexpect_output_regex = "Say hello"\n', encoding="utf-8"
     )
     (ok / "check.sh").write_text(
-        '#!/usr/bin/env bash\ntest -f "$AGENTPLANE_HANDOFF" && grep -q "status: done" "$AGENTPLANE_HANDOFF"\n',
+        '#!/usr/bin/env bash\ntest -f "$TAZUNA_HANDOFF" && grep -q "status: done" "$TAZUNA_HANDOFF"\n',
         encoding="utf-8",
     )
     seeded = suite / "seeded"
@@ -262,11 +262,11 @@ def test_report_excludes_infrastructure_failures_but_counts_timeouts() -> None:
 def test_a_cancelled_trial_stops_the_suite_and_is_not_counted(
     project: Path, sandbox: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("AGENTPLANE_MOCK_SLEEP", "3")
+    monkeypatch.setenv("TAZUNA_MOCK_SLEEP", "3")
     timer = threading.Timer(0.5, os.kill, (os.getpid(), signal.SIGINT))
     timer.start()
     try:
-        with pytest.raises(AgentplaneError) as info:
+        with pytest.raises(TazunaError) as info:
             run_suite(
                 load_config(project), _suite(sandbox), role="dry", provider=None, trials=2, results_dir=sandbox / "out"
             )
@@ -326,17 +326,17 @@ def test_eval_report_fail_on_regression(sandbox: Path, capsys) -> None:
 def test_a_cancelled_trial_stops_the_suite_even_when_its_handoff_cannot_be_written(
     project: Path, sandbox: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from agentplane import run as run_mod
+    from tazuna import run as run_mod
 
     def broken(*args, **kwargs):
-        raise AgentplaneError("disk full")
+        raise TazunaError("disk full")
 
     monkeypatch.setattr(run_mod, "write_handoff", broken)
-    monkeypatch.setenv("AGENTPLANE_MOCK_SLEEP", "3")
+    monkeypatch.setenv("TAZUNA_MOCK_SLEEP", "3")
     timer = threading.Timer(0.5, os.kill, (os.getpid(), signal.SIGINT))
     timer.start()
     try:
-        with pytest.raises(AgentplaneError) as info:
+        with pytest.raises(TazunaError) as info:
             run_suite(
                 load_config(project), _suite(sandbox), role="dry", provider=None, trials=2, results_dir=sandbox / "out"
             )
@@ -348,7 +348,7 @@ def test_a_cancelled_trial_stops_the_suite_even_when_its_handoff_cannot_be_writt
 
 
 def test_a_late_sighup_stops_the_suite_with_the_documented_code() -> None:
-    from agentplane.run import cancel_exit_code
+    from tazuna.run import cancel_exit_code
 
     assert cancel_exit_code(signal.SIGHUP) == 143
     assert cancel_exit_code(signal.SIGTERM) == 143
@@ -415,7 +415,7 @@ def test_cli_run_json_prints_exactly_one_record(project: Path, capsys, monkeypat
     record = json.loads(out)  # nothing else on stdout: no provider echo, no HANDOFF line
     assert record["status"] == "done" and record["exit"] == 0 and record["parent"] is None
     assert record["id"] == read_records()[-1]["id"]
-    monkeypatch.setenv("AGENTPLANE_MOCK_EXIT", "9")
+    monkeypatch.setenv("TAZUNA_MOCK_EXIT", "9")
     assert main(["run", "--role", "dry", "--dir", str(project), "--json", "fail please"]) == 1
     assert json.loads(capsys.readouterr().out)["status"] == "failed"
     assert main(["run", "--role", "dry", "--dir", str(project), "--json", "--dry-run", "x"]) == 2
@@ -427,7 +427,7 @@ def test_cli_init_creates_files_and_doctor_is_clean(sandbox: Path, capsys) -> No
     proj.mkdir(parents=True)
     subprocess.run(["git", "init", "-q"], cwd=proj, check=True)
     assert main(["init", "--dir", str(proj)]) == 0
-    assert (proj / "agentplane.toml").is_file() and (proj / "PROJECT.md").is_file()
+    assert (proj / "tazuna.toml").is_file() and (proj / "PROJECT.md").is_file()
     cfg = load_config(proj)
     assert set(cfg.roles) == {"dry"}  # no real CLI on PATH → only the offline role
     assert main(["render", "--dir", str(proj)]) == 0

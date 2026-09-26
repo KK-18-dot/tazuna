@@ -15,11 +15,11 @@ from pathlib import Path
 
 from . import __version__
 from .config import PROJECT_CONFIG_NAME, Config, default_project_config, load_config
-from .errors import EXIT_USAGE, AgentplaneError, UsageError
+from .errors import EXIT_USAGE, TazunaError, UsageError
 from .handoff import read_records
 from .routing import all_provider_status, explain_routes, resolve_route
 
-PROG = "agentplane"
+PROG = "tazuna"
 
 
 def _out(text: str = "") -> None:
@@ -78,14 +78,14 @@ def cmd_init(args: argparse.Namespace) -> int:
     _out(f"wrote {cfg_path}")
     policy = project_dir / "PROJECT.md"
     if not policy.exists():
-        template = resources.files("agentplane").joinpath("templates/PROJECT.md").read_text(encoding="utf-8")
+        template = resources.files("tazuna").joinpath("templates/PROJECT.md").read_text(encoding="utf-8")
         policy.write_text(template.replace("{{name}}", name), encoding="utf-8")
         _out(f"wrote {policy}")
     elif (project_dir / "CLAUDE.md").is_file():
         _out("PROJECT.md exists; leaving it untouched")
     if not policy.exists() and (project_dir / "CLAUDE.md").is_file():
-        _out("hint: a hand-written CLAUDE.md exists; `agentplane render --adopt` promotes it to PROJECT.md")
-    _out("next: edit PROJECT.md, then `agentplane render` and `agentplane doctor`")
+        _out("hint: a hand-written CLAUDE.md exists; `tazuna render --adopt` promotes it to PROJECT.md")
+    _out("next: edit PROJECT.md, then `tazuna render` and `tazuna doctor`")
     return 0
 
 
@@ -254,7 +254,7 @@ def cmd_status(args: argparse.Namespace) -> int:
     from .render import render
 
     cfg = load_config(args.dir)
-    _out(f"# agentplane status — {cfg.project_dir}")
+    _out(f"# tazuna status — {cfg.project_dir}")
     _out("")
     _out("## git")
     if shutil.which("git"):
@@ -282,10 +282,10 @@ def cmd_status(args: argparse.Namespace) -> int:
         try:
             for res in render(cfg, check=True):
                 _out(f"- {res.target}: {res.action}")
-        except AgentplaneError as exc:
+        except TazunaError as exc:
             _out(f"- ⚠ {exc}")
     else:
-        _out(f"- ⚠ {cfg.policy_file.name} missing (agentplane init)")
+        _out(f"- ⚠ {cfg.policy_file.name} missing (tazuna init)")
     handoff = cfg.project_dir / "HANDOFF.md"
     _out("")
     _out("## handoff")
@@ -399,10 +399,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--version", action="version", version=f"{PROG} {__version__}")
     sub = parser.add_subparsers(dest="cmd", metavar="COMMAND")
 
-    p = sub.add_parser("init", help="create agentplane.toml and PROJECT.md in a project")
+    p = sub.add_parser("init", help="create tazuna.toml and PROJECT.md in a project")
     p.add_argument("--dir", help="project directory (default: current)")
     p.add_argument("--name", help="project name (default: directory name)")
-    p.add_argument("--force", action="store_true", help="overwrite an existing agentplane.toml")
+    p.add_argument("--force", action="store_true", help="overwrite an existing tazuna.toml")
     p.set_defaults(func=cmd_init)
 
     p = sub.add_parser("render", help="render PROJECT.md into the enabled targets")
@@ -415,7 +415,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("run", help="run a task on a provider and write HANDOFF.md")
     p.add_argument("task", nargs="*", help="task text (or --task-file, or stdin)")
-    p.add_argument("--role", help="role from [roles] in agentplane.toml")
+    p.add_argument("--role", help="role from [roles] in tazuna.toml")
     p.add_argument("--provider", help="provider name (when not using --role)")
     p.add_argument("--model", help="override the model id or [models] alias")
     p.add_argument("--effort", help="override the reasoning effort")
@@ -465,7 +465,7 @@ def build_parser() -> argparse.ArgumentParser:
     er.add_argument("--trials", type=int, default=1)
     er.add_argument("--only", help="regex on case names")
     er.add_argument("--out", help="results directory (default: under the state dir)")
-    er.add_argument("--dir", help="project whose agentplane.toml supplies roles (default: current)")
+    er.add_argument("--dir", help="project whose tazuna.toml supplies roles (default: current)")
     ep = es.add_parser("report", help="render a results.jsonl as markdown")
     ep.add_argument("results")
     ep.add_argument("--baseline", help="another results.jsonl to diff against")
@@ -494,7 +494,7 @@ def main(argv: list[str] | None = None) -> int:
         return EXIT_USAGE
     try:
         return int(args.func(args))
-    except AgentplaneError as exc:
+    except TazunaError as exc:
         _err(str(exc))
         return exc.code
     except KeyboardInterrupt:

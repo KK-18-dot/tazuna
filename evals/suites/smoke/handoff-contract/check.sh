@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # The HANDOFF must exist, carry the typed status, and label provider output as data.
 set -u
-h="$AGENTPLANE_HANDOFF"
+h="$TAZUNA_HANDOFF"
 [[ -f "$h" ]] || { echo "HANDOFF missing"; exit 1; }
 grep -q '^- status: done$' "$h" || { echo "status line missing"; exit 1; }
 grep -q '^## changed$' "$h" && grep -q '^## verified$' "$h" && grep -q '^## next$' "$h" || { echo "sections missing"; exit 1; }

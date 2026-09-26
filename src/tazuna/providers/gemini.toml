@@ -1,13 +1,13 @@
 # Gemini CLI, headless. https://github.com/google-gemini/gemini-cli
 # Marked experimental: the flag set follows the CLI's documented options and has not been
-# exercised by the maintainers against every release. `agentplane doctor` only checks presence.
+# exercised by the maintainers against every release. `tazuna doctor` only checks presence.
 name = "gemini"
 description = "Gemini CLI (gemini -p) [experimental]"
 experimental = true
 binary = "gemini"
 command = ["gemini", "-p", "{task}"]
 model_args = ["-m", "{model}"]
-# auto_edit approves file edits but still refuses arbitrary shell commands; agentplane never
+# auto_edit approves file edits but still refuses arbitrary shell commands; tazuna never
 # passes the CLI's fully unattended mode.
 write_args = ["--approval-mode", "auto_edit"]
 efforts = []

@@ -73,7 +73,7 @@ def safe_git(
 ) -> subprocess.CompletedProcess[bytes]:
     """Run git in a repository a provider may have written to (see SAFE_GIT_ARGS).
 
-    Every git call agentplane makes in a project goes through here: ``run``'s snapshot, and the
+    Every git call tazuna makes in a project goes through here: ``run``'s snapshot, and the
     ``doctor`` and ``status`` commands a person runs later in the same repository. Commands that
     can run filter drivers (``status``) also need ``config=filter_overrides(root)``.
     """
@@ -190,7 +190,7 @@ def filter_overrides(root: Path) -> tuple[str, ...]:
     """``-c filter.<name>.clean=`` pairs that switch off every configured filter driver.
 
     ``git status`` runs a driver's clean command to compare file content, so a provider that can
-    write .git/config could otherwise make agentplane run any command outside the provider's
+    write .git/config could otherwise make tazuna run any command outside the provider's
     sandbox. User-level drivers (git-lfs) are switched off too; that can only add false
     positives to ``changed``, never run anything.
     """
@@ -204,7 +204,7 @@ def filter_overrides(root: Path) -> tuple[str, ...]:
         if "=" in key:  # `-c key=value` splits at the first "=", so this driver cannot be overridden
             raise UnsafeRepository(
                 f"git config defines a filter driver whose name contains '=' ({_display(match.group(1))}); "
-                "agentplane will not run git status there"
+                "tazuna will not run git status there"
             )
         overrides += ["-c", f"{key}="]
     return tuple(overrides)

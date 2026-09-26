@@ -1,10 +1,10 @@
 # Security policy
 
-agentplane launches provider CLIs with write access to a directory you choose. Its own guarantees are listed in [docs/security.md](docs/security.md).
+tazuna launches provider CLIs with write access to a directory you choose. Its own guarantees are listed in [docs/security.md](docs/security.md).
 
 ## Reporting a vulnerability
 
-Please do not open a public issue for a vulnerability. Use GitHub's private vulnerability reporting on this repository ("Security" tab → "Report a vulnerability"). Include the agentplane version, the provider CLI and version involved, and a minimal reproduction.
+Please do not open a public issue for a vulnerability. Use GitHub's private vulnerability reporting on this repository ("Security" tab → "Report a vulnerability"). Include the tazuna version, the provider CLI and version involved, and a minimal reproduction.
 
 You will get an acknowledgement within a week. Fixes are released as patch versions and noted in `CHANGELOG.md`.
 

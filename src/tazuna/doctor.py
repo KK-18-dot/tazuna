@@ -1,4 +1,4 @@
-"""Diagnostics: ``agentplane doctor``.
+"""Diagnostics: ``tazuna doctor``.
 
 Every line is ``OK``, ``WARN`` or ``NOTE``. WARN means something is broken or drifted and the
 exit code is 1. NOTE is informational (an optional provider you do not have, a legitimate human
@@ -16,7 +16,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from .config import Config, ensure_state_dir, load_config, state_dir
-from .errors import AgentplaneError
+from .errors import TazunaError
 from .gitstate import safe_git
 from .handoff import ledger_path
 from .render import is_generated, render
@@ -105,21 +105,21 @@ def run_doctor(project_dir: Path | None = None) -> Report:
 
     try:
         cfg = load_config(project_dir)
-    except AgentplaneError as exc:
+    except TazunaError as exc:
         report.warn(f"configuration: {exc}")
         return report
     report.ok("configuration loaded from: " + " < ".join(cfg.sources))
     if not cfg.project_file.is_file():
-        report.note(f"no {cfg.project_file.name} in {cfg.project_dir} (run `agentplane init` to create one)")
+        report.note(f"no {cfg.project_file.name} in {cfg.project_dir} (run `tazuna init` to create one)")
 
     _check_providers(cfg, report)
     _check_models(cfg, report)
     _check_render(cfg, report)
     _check_state(report)
     check_tracked_secret_names(cfg.project_dir, report)
-    depth = os.environ.get("AGENTPLANE_DEPTH")
+    depth = os.environ.get("TAZUNA_DEPTH")
     if depth:
-        report.note(f"running inside a delegated provider (AGENTPLANE_DEPTH={depth})")
+        report.note(f"running inside a delegated provider (TAZUNA_DEPTH={depth})")
     return report
 
 
@@ -145,14 +145,14 @@ def _check_providers(cfg: Config, report: Report) -> None:
     for name in sorted(cfg.providers):
         for key, arg in forbidden_in_definition(cfg.providers[name]):
             report.warn(
-                f"provider {name}: forbidden flag or value {arg!r} in {key}; `agentplane run` refuses it "
+                f"provider {name}: forbidden flag or value {arg!r} in {key}; `tazuna run` refuses it "
                 "because it disables the harness's own approvals or sandbox (remove it from the provider table)"
             )
     for row in explain_routes(cfg):
         if row.get("problem"):
             report.warn(f"role {row['role']}: {row['problem']}")
     if not cfg.roles:
-        report.note("no roles defined; `agentplane run` needs --provider until you add [roles.*]")
+        report.note("no roles defined; `tazuna run` needs --provider until you add [roles.*]")
 
 
 def _check_models(cfg: Config, report: Report) -> None:
@@ -180,7 +180,7 @@ def _check_render(cfg: Config, report: Report) -> None:
         return
     try:
         results = render(cfg, check=True)
-    except AgentplaneError as exc:
+    except TazunaError as exc:
         report.warn(f"render: {exc}")
         return
     for res in results:
@@ -190,13 +190,13 @@ def _check_render(cfg: Config, report: Report) -> None:
         if res.action == "unchanged":
             report.ok(f"render target {res.target}: {rel} in sync")
         elif res.action == "missing":
-            report.note(f"render target {res.target}: {rel} not rendered yet (run `agentplane render`)")
+            report.note(f"render target {res.target}: {rel} not rendered yet (run `tazuna render`)")
         elif res.action == "drift":
             if is_generated(res.path):
-                report.warn(f"render target {res.target}: {rel} drifted from PROJECT.md (run `agentplane render`)")
+                report.warn(f"render target {res.target}: {rel} drifted from PROJECT.md (run `tazuna render`)")
             else:
                 report.warn(
-                    f"render target {res.target}: {rel} is hand-written (use `agentplane render --adopt` or --force)"
+                    f"render target {res.target}: {rel} is hand-written (use `tazuna render --adopt` or --force)"
                 )
 
 
@@ -211,14 +211,14 @@ def _check_state(report: Report) -> None:
     except OSError as exc:
         report.warn(f"state directory not writable: {sd} ({exc})")
         return
-    # Directories created by agentplane 0.1.0 (or by hand) follow the umask; logs hold full
+    # Directories created by tazuna 0.1.0 (or by hand) follow the umask; logs hold full
     # provider output, so an open state directory is a finding, with the one-line fix.
     fix = f"chmod -R go-rwx {shlex.quote(str(sd))}"
     info = sd.stat()
     if info.st_uid != os.getuid():
         report.warn(
             f"state directory {sd} is owned by uid {info.st_uid}, not by you (uid {os.getuid()}); "
-            "point AGENTPLANE_STATE_DIR at a directory of your own"
+            "point TAZUNA_STATE_DIR at a directory of your own"
         )
     mode = info.st_mode & 0o777
     if mode & 0o077:

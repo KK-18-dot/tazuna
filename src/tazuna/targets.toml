@@ -5,17 +5,17 @@
 #   appendix    default appendix file (relative to project root) appended after the policy
 #   max_bytes   optional: the harness stops reading past this size; `render --check` fails and
 #               `doctor` warns when the rendered file is larger (it is still written)
-# Packs and agentplane.toml can add targets or override these tables.
+# Packs and tazuna.toml can add targets or override these tables.
 
 [targets.claude]
 description = "Claude Code"
 path = "CLAUDE.md"
-appendix = ".agentplane/appendix/claude.md"
+appendix = ".tazuna/appendix/claude.md"
 
 [targets.codex]
 description = "OpenAI Codex and any AGENTS.md-aware agent"
 path = "AGENTS.md"
-appendix = ".agentplane/appendix/codex.md"
+appendix = ".tazuna/appendix/codex.md"
 # Codex CLI reads at most project_doc_max_bytes of AGENTS.md (32768 in 0.153.4) and drops the rest.
 max_bytes = 32768
 
@@ -23,24 +23,24 @@ max_bytes = 32768
 description = "Cursor project rule"
 path = ".cursor/rules/project.mdc"
 frontmatter = "---\ndescription: Project contract (generated from PROJECT.md)\nalwaysApply: true\n---\n"
-appendix = ".agentplane/appendix/cursor.md"
+appendix = ".tazuna/appendix/cursor.md"
 
 [targets.gemini]
 description = "Gemini CLI"
 path = "GEMINI.md"
-appendix = ".agentplane/appendix/gemini.md"
+appendix = ".tazuna/appendix/gemini.md"
 
 [targets.copilot]
 description = "GitHub Copilot (instructions only)"
 path = ".github/copilot-instructions.md"
-appendix = ".agentplane/appendix/copilot.md"
+appendix = ".tazuna/appendix/copilot.md"
 
 [targets.windsurf]
 description = "Windsurf"
 path = ".windsurfrules"
-appendix = ".agentplane/appendix/windsurf.md"
+appendix = ".tazuna/appendix/windsurf.md"
 
 [targets.cline]
 description = "Cline"
 path = ".clinerules"
-appendix = ".agentplane/appendix/cline.md"
+appendix = ".tazuna/appendix/cline.md"

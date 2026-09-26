@@ -1,7 +1,7 @@
 """Roles → (provider, model, effort, timeout, fallback), and provider availability.
 
-Routing is deliberately static and declarative: a role is a named row in ``agentplane.toml``,
-and ``agentplane routes`` prints exactly what ``agentplane run --role`` will do. Nothing is
+Routing is deliberately static and declarative: a role is a named row in ``tazuna.toml``,
+and ``tazuna routes`` prints exactly what ``tazuna run --role`` will do. Nothing is
 chosen at runtime from heuristics, so a user can always predict which provider bills a task.
 """
 
@@ -147,7 +147,7 @@ def resolve_route(
 
 
 def explain_routes(cfg: Config) -> list[dict[str, Any]]:
-    """Rows for ``agentplane routes``: one per role, with provider availability."""
+    """Rows for ``tazuna routes``: one per role, with provider availability."""
     statuses = {s.name: s for s in all_provider_status(cfg)}
     rows = []
     for role in sorted(cfg.roles):

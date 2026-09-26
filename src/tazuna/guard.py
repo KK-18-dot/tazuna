@@ -1,11 +1,11 @@
 """Generated-file guard, usable from harness hooks.
 
-``agentplane guard PATH...``      exit 2 when any path is a generated file, else 0.
-``agentplane guard --hook claude`` read a Claude Code PreToolUse JSON event on stdin and answer
+``tazuna guard PATH...``      exit 2 when any path is a generated file, else 0.
+``tazuna guard --hook claude`` read a Claude Code PreToolUse JSON event on stdin and answer
                                    with a permissionDecision of "ask" for generated files.
                                    Anything unexpected → exit 0 with no output (fail open):
                                    hooks are hints; real enforcement belongs in review and CI
-                                   (``agentplane render --check``).
+                                   (``tazuna render --check``).
 """
 
 from __future__ import annotations
@@ -42,8 +42,8 @@ def claude_hook(stdin_text: str) -> str | None:
                 "hookEventName": "PreToolUse",
                 "permissionDecision": "ask",
                 "permissionDecisionReason": (
-                    f"{path.name} is generated from PROJECT.md by agentplane. "
-                    "Edit PROJECT.md and run `agentplane render` instead."
+                    f"{path.name} is generated from PROJECT.md by tazuna. "
+                    "Edit PROJECT.md and run `tazuna render` instead."
                 ),
             }
         }
@@ -55,7 +55,7 @@ CLAUDE_SETTINGS_SNIPPET = """{
     "PreToolUse": [
       {
         "matcher": "Edit|Write|MultiEdit",
-        "hooks": [{ "type": "command", "command": "agentplane guard --hook claude" }]
+        "hooks": [{ "type": "command", "command": "tazuna guard --hook claude" }]
       }
     ]
   }
@@ -74,7 +74,7 @@ def main(paths: list[str], hook: str | None = None, print_hook: bool = False) ->
     hits = check_paths(paths)
     for hit in hits:
         print(
-            f"agentplane guard: {hit} is generated from PROJECT.md; edit PROJECT.md and run `agentplane render`",
+            f"tazuna guard: {hit} is generated from PROJECT.md; edit PROJECT.md and run `tazuna render`",
             file=sys.stderr,
         )
     return 2 if hits else 0
