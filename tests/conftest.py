@@ -1,7 +1,9 @@
 """Shared fixtures.
 
 Every test runs against a throwaway HOME, XDG dirs, and state dir, and a PATH that contains only
-a `fakebin` directory plus the system directories, so no real provider CLI can ever be reached.
+a `fakebin` directory plus a mirror of the system directories with every packaged provider binary
+removed, so no real provider CLI can ever be reached — not even one installed system-wide, such as
+`ollama` in /usr/local/bin.
 """
 
 from __future__ import annotations
@@ -9,15 +11,44 @@ from __future__ import annotations
 import os
 import stat
 import subprocess
+import tomllib
 from pathlib import Path
 
 import pytest
 
 SYSTEM_PATH = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+PROVIDERS_DIR = Path(__file__).resolve().parents[1] / "src" / "tazuna" / "providers"
+
+
+def provider_binaries() -> set[str]:
+    """Binary names of every packaged provider definition (claude, codex, cursor-agent, ...)."""
+    names = set()
+    for toml in PROVIDERS_DIR.glob("*.toml"):
+        binary = tomllib.loads(toml.read_text(encoding="utf-8")).get("binary")
+        if binary:
+            names.add(binary)
+    return names
+
+
+@pytest.fixture(scope="session")
+def system_bin(tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """Symlinks to the system executables, first match on SYSTEM_PATH wins, minus provider binaries."""
+    hidden = provider_binaries()
+    out = tmp_path_factory.mktemp("sysbin")
+    for d in SYSTEM_PATH.split(":"):
+        if not os.path.isdir(d):
+            continue
+        for entry in os.scandir(d):
+            target = out / entry.name
+            if entry.name in hidden or target.exists() or target.is_symlink():
+                continue
+            if os.access(entry.path, os.X_OK) and not entry.is_dir():
+                target.symlink_to(entry.path)
+    return out
 
 
 @pytest.fixture
-def sandbox(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+def sandbox(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, system_bin: Path) -> Path:
     home = tmp_path / "home"
     home.mkdir()
     fakebin = tmp_path / "fakebin"
@@ -26,7 +57,7 @@ def sandbox(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setenv("XDG_CONFIG_HOME", str(home / ".config"))
     monkeypatch.setenv("XDG_STATE_HOME", str(home / ".local" / "state"))
     monkeypatch.setenv("TAZUNA_STATE_DIR", str(tmp_path / "state"))
-    monkeypatch.setenv("PATH", f"{fakebin}:{SYSTEM_PATH}")
+    monkeypatch.setenv("PATH", f"{fakebin}:{system_bin}")
     for var in (
         "TAZUNA_DEPTH",
         "TAZUNA_PARENT",
