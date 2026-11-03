@@ -101,3 +101,15 @@ def test_missing_pack_is_an_error(sandbox: Path) -> None:
     (proj / "tazuna.toml").write_text('[packs]\npaths = ["./nope"]\n', encoding="utf-8")
     with pytest.raises(ConfigError, match="pack not found"):
         load_config(proj)
+
+
+def test_sandbox_path_hides_system_installed_provider_clis(sandbox: Path) -> None:
+    """A provider CLI installed system-wide (ollama in /usr/local/bin) must not leak into tests."""
+    import shutil
+
+    from conftest import provider_binaries
+
+    assert {"claude", "codex", "cursor-agent", "gemini", "ollama"} <= provider_binaries()
+    for name in provider_binaries():
+        assert shutil.which(name) is None, name
+    assert shutil.which("git") is not None and shutil.which("sh") is not None

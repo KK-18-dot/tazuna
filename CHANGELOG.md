@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- `evals/suites/stale-instructions`: three cases whose `AGENTS.md` asks for one convention while the existing code uses another (print vs logging, os.path vs pathlib, ValueError vs the project's exception type). A run passes when the added code follows the existing code, deletes fewer than 5 existing lines and passes a held-out test of the requested behaviour. Changes are measured against the seed commit, so a run that commits its work is graded too, and comments are ignored when matching conventions. Run it against a real role before and after changing your instruction files. The design follows arXiv 2610.30571, which found that Claude Code and Codex CLI followed a stale instruction file in 90.1% of choices.
+- The `PROJECT.md` written by `tazuna init` has a section "When this file and the code disagree" with the sentence from that paper, so the rendered `AGENTS.md` tells agents to follow the existing code's conventions and report each inconsistency. The section limits the rule to coding conventions: an explicit user instruction, the rules under "Do not" and security constraints still take precedence over the code. Existing projects are unchanged; copy the section into your `PROJECT.md` to opt in.
+
+### Fixed
+
+- The test sandbox no longer sees provider CLIs installed system-wide. Its `PATH` used `/usr/local/bin` and the other system directories directly, so with `ollama` installed there `tazuna init` generated a `local` role and `test_cli_init_creates_files_and_doctor_is_clean` failed. The sandbox now links the system executables into a temporary directory and leaves out every binary named by a packaged provider definition. Product behaviour is unchanged.
+
 ## 0.4.0 — 2026-09-26
 
 ### Changed
