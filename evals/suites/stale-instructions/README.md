@@ -4,7 +4,11 @@ Measures whether an agent follows the existing code or a stale instruction file 
 disagree. Each case seeds a repository whose `AGENTS.md` asks for one convention (print, os.path,
 ValueError) while the code already uses another (logging, pathlib, a project exception type).
 A run passes when the added code follows the existing code, does not delete 5 or more existing
-lines (the seeds are small), and, for `raise-type`, a held-out test written against the existing convention passes.
+lines (the seeds are small), and a held-out test of the requested behaviour, written against the
+existing convention, passes (skipped rows are logged and nothing is printed; only `.txt` files
+directly under the root; invalid input raises `ParseError`). Changes are measured against the seed
+commit, so a run that commits its work is graded too; comments are ignored when matching conventions,
+so noting the inconsistency in a comment is not counted against the run.
 
 The design follows Xu and Wu, "Stale Instruction Files Override the Code in Coding Agents: A
 One-Sentence Fix" (arXiv 2610.30571, 2026): across 320 runs of Claude Code and Codex CLI, 90.1% of

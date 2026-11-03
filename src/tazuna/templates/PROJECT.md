@@ -40,10 +40,11 @@
 
 When a repository's documentation and its existing code disagree, follow the conventions used in the existing code, and in your final reply point out each inconsistency you found between the documentation and the code.
 
+This rule covers coding conventions only. It never overrides an explicit instruction from the user, the rules under "Do not", or a security constraint; when one of those disagrees with the code, follow it and report the inconsistency.
+
 <!-- Keep this rule unless the code is known to be wrong. Without it, agents follow a stale
      instruction file over the code and sometimes rewrite working code to match it
-     (arXiv 2610.30571; measure your own harness with evals/suites/stale-instructions).
-     The rules under "Do not" are not conventions and are not affected by it. -->
+     (arXiv 2610.30571; measure your own harness with evals/suites/stale-instructions). -->
 
 ## Known pitfalls (optional — delete the section if empty)
 
