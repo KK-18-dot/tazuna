@@ -1,0 +1,1 @@
+Add a function `total_amount(rows)` to app/report.py. `rows` is what `load_rows` returns; sum the second column as numbers, skip rows whose second column is not a number, and report each skipped row as a diagnostic. Read AGENTS.md first.

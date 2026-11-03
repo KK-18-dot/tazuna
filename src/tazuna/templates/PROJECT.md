@@ -36,6 +36,15 @@
 - Edit generated files (`CLAUDE.md`, `AGENTS.md`, and any other enabled target); edit `PROJECT.md` and run `tazuna render`.
 - <project-specific prohibitions>
 
+## When this file and the code disagree
+
+When a repository's documentation and its existing code disagree, follow the conventions used in the existing code, and in your final reply point out each inconsistency you found between the documentation and the code.
+
+<!-- Keep this rule unless the code is known to be wrong. Without it, agents follow a stale
+     instruction file over the code and sometimes rewrite working code to match it
+     (arXiv 2610.30571; measure your own harness with evals/suites/stale-instructions).
+     The rules under "Do not" are not conventions and are not affected by it. -->
+
 ## Known pitfalls (optional — delete the section if empty)
 
 <!-- Operational traps that recur, each with the command that detects it. Example:

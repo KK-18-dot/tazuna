@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- `evals/suites/stale-instructions`: three cases whose `AGENTS.md` asks for one convention while the existing code uses another (print vs logging, os.path vs pathlib, ValueError vs the project's exception type). A run passes when the added code follows the existing code, deletes fewer than 5 existing lines and, for `raise-type`, passes a held-out test. Run it against a real role before and after changing your instruction files. The design follows arXiv 2610.30571, which found that Claude Code and Codex CLI followed a stale instruction file in 90.1% of choices.
+- The `PROJECT.md` written by `tazuna init` has a section "When this file and the code disagree" with the sentence from that paper, so the rendered `AGENTS.md` tells agents to follow the existing code's conventions and report each inconsistency. Existing projects are unchanged; copy the section into your `PROJECT.md` to opt in.
+
 ## 0.4.0 — 2026-09-26
 
 ### Changed

@@ -73,3 +73,7 @@ tazuna eval report results/new/results.jsonl --baseline results/base/results.jso
 ## The bundled smoke suite
 
 `evals/suites/smoke` runs offline with the mock provider and asserts the HANDOFF contract, read-only discipline, and seeded workdirs. It is part of the test suite; run it after changing tazuna. Point it at a real role to confirm a provider honours the contract end to end.
+
+## The stale-instructions suite
+
+`evals/suites/stale-instructions` needs a real provider (the mock adds no code, so `--role dry` fails every case). Each case seeds an `AGENTS.md` that disagrees with the existing code; the grader passes a run that follows the code. Compare two runs of the same role, before and after you add the precedence sentence to your user-level instruction file, with `tazuna eval report after/results.jsonl --baseline before/results.jsonl`. See the suite's README for the source of the design.
